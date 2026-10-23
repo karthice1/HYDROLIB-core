@@ -9,9 +9,9 @@ uses only open global data:
   lowered by an assumed depth because no bathymetry survey is public,
 * ESA WorldCover 2021 to assign Manning roughness per land-cover class.
 
-Boundary forcing is NOT observed data yet. The upstream discharge and the tide are
-synthetic placeholders, written so the model can be run end to end, and must be
-replaced with the CWC Neeleswaram record and Kochi tide before any result is used.
+The upstream discharge is the observed Neeleswaram record for 14-20 August 2018,
+digitised from the CWC flood report (see data/README.md). The sea level is still a
+synthetic M2 + K1 tide and must be replaced with an observed or predicted Kochi tide.
 """
 
 import argparse
@@ -19,6 +19,7 @@ from pathlib import Path
 
 import meshkernel as mk
 import numpy as np
+import pandas as pd
 import rasterio
 from rasterio import features
 from rasterio.warp import Resampling, calculate_default_transform, reproject
@@ -31,6 +32,9 @@ from hydrolib.core.dflowfm.mdu.models import FMModel
 from hydrolib.core.dflowfm.net.models import Network
 from hydrolib.core.dflowfm.polyfile.models import Point, PolyFile, PolyObject, Metadata
 
+REFERENCE = pd.Timestamp("2018-08-13 00:00")  # model time zero, IST
+DURATION_HOURS = 192.0  # 13 Aug 00:00 to 21 Aug 00:00
+DEFAULT_DISCHARGE = Path(__file__).parent / "data" / "neeleswaram_discharge_cwc_fig3.csv"
 CRS = "EPSG:32643"  # WGS 84 / UTM zone 43N
 WINDOW = (76.15, 10.0, 76.55, 10.3)  # lon/lat bounds of the lower Periyar
 
@@ -115,7 +119,7 @@ def _drop_obsolete_keywords(mdu_path: Path) -> None:
 
 
 def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
-          max_elevation: float):
+          max_elevation: float, discharge_csv: Path = DEFAULT_DISCHARGE):
     out_dir.mkdir(parents=True, exist_ok=True)
     dem, transform = warp(sorted((data_dir / "dem").glob("*.tif")), out_dir / "dem_raw.tif",
                           cell_size, Resampling.average)
@@ -163,17 +167,22 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
     write_polyline(out_dir / "upstream.pli", "upstream", to_utm(UPSTREAM))
     write_polyline(out_dir / "sea.pli", "sea", to_utm(SEA))
 
-    # Placeholder forcing: a 10-day synthetic flood wave and an M2 tide.
-    hours = np.arange(0, 241, 1.0)
-    q = 300 + 8500 * np.exp(-0.5 * ((hours - 120) / 30) ** 2)
-    h = 0.5 * np.sin(2 * np.pi * hours / 12.42)
+    # Upstream: observed Neeleswaram discharge (digitised from the CWC report),
+    # held constant before the first and after the last record. Sea: a
+    # synthetic M2 + K1 tide until an observed Kochi record is available.
+    observed = pd.read_csv(discharge_csv, parse_dates=["datetime_ist"])
+    hours_obs = (observed["datetime_ist"] - REFERENCE).dt.total_seconds() / 3600.0
+    hours = np.arange(0.0, DURATION_HOURS + 1.0, 1.0)
+    q = np.interp(hours, hours_obs, observed["discharge_m3s"])
+    h = 0.35 * np.sin(2 * np.pi * hours / 12.42) + 0.2 * np.sin(2 * np.pi * hours / 23.93)
+    time_unit = f"hours since {REFERENCE:%Y-%m-%d %H:%M:%S}"
     forcing = ForcingModel(forcing=[
         TimeSeries(name="upstream_0001", function="timeseries", timeinterpolation="linear",
-                   quantityunitpair=[QuantityUnitPair(quantity="time", unit="hours since 2018-08-10 00:00:00"),
+                   quantityunitpair=[QuantityUnitPair(quantity="time", unit=time_unit),
                                      QuantityUnitPair(quantity="dischargebnd", unit="m3/s")],
                    datablock=[[t, v] for t, v in zip(hours, q)]),
         *[TimeSeries(name=f"sea_{i:04d}", function="timeseries", timeinterpolation="linear",
-                     quantityunitpair=[QuantityUnitPair(quantity="time", unit="hours since 2018-08-10 00:00:00"),
+                     quantityunitpair=[QuantityUnitPair(quantity="time", unit=time_unit),
                                        QuantityUnitPair(quantity="waterlevelbnd", unit="m")],
                      datablock=[[t, v] for t, v in zip(hours, h)]) for i in (1, 2)],
     ])
@@ -185,10 +194,10 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
     ext.filepath = Path("periyar.ext")
     fm.external_forcing.extforcefilenew = ext
 
-    fm.time.refdate = 20180810
+    fm.time.refdate = int(f"{REFERENCE:%Y%m%d}")
     fm.time.tunit = "H"
     fm.time.tstart = 0.0
-    fm.time.tstop = 240.0
+    fm.time.tstop = DURATION_HOURS
     fm.output.mapinterval = [3600.0]
     fm.output.hisinterval = [600.0]
     fm.save(recurse=True)
@@ -208,5 +217,8 @@ if __name__ == "__main__":
                         help="Assumed channel depth below the DEM water surface in metres")
     parser.add_argument("--max-elevation", type=float, default=20.0,
                         help="Upper terrain elevation of the model domain in metres")
+    parser.add_argument("--discharge-csv", type=Path, default=DEFAULT_DISCHARGE,
+                        help="Upstream discharge series with datetime_ist and discharge_m3s columns")
     args = parser.parse_args()
-    build(args.data_dir, args.out_dir, args.cell_size, args.channel_depth, args.max_elevation)
+    build(args.data_dir, args.out_dir, args.cell_size, args.channel_depth, args.max_elevation,
+          args.discharge_csv)
