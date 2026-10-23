@@ -55,7 +55,6 @@ MANNING = {
 # Placeholder boundary locations (lon, lat), to be checked against the gauge
 # metadata and satellite imagery.
 UPSTREAM = [(76.495, 10.215), (76.505, 10.185)]   # across the river near Neeleswaram
-SEA = [(76.155, 10.05), (76.155, 10.29)]          # along the coast, west model edge
 
 
 def warp(src_paths, dst_path, resolution, resampling, dtype="float32", nodata=-9999.0):
@@ -136,7 +135,11 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
     profile = dict(driver="GTiff", height=bed.shape[0], width=bed.shape[1], count=1,
                    dtype="float32", crs=CRS, transform=transform, nodata=-9999.0,
                    compress="deflate")
-    for name, array in (("bedlevel.tif", bed), ("manning.tif", manning)):
+    # The DEM before channel burning and the channel mask are kept so that the
+    # sensitivity analysis can re-derive bed level and roughness per run.
+    for name, array in (("bedlevel.tif", bed), ("manning.tif", manning),
+                        ("dem_model.tif", dem.astype("float32")),
+                        ("channel.tif", channel.astype("float32"))):
         with rasterio.open(out_dir / name, "w", **profile) as dst:
             dst.write(array, 1)
 
@@ -165,7 +168,12 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
     fm.physics.uniffrictcoef = 0.04
 
     write_polyline(out_dir / "upstream.pli", "upstream", to_utm(UPSTREAM))
-    write_polyline(out_dir / "sea.pli", "sea", to_utm(SEA))
+    # The sea boundary runs exactly along the western edge of the mesh (the coast
+    # lies at the west edge of the model window), so D-Flow FM finds its edges.
+    mesh = network._mesh2d.get_mesh2d()
+    west = mesh.node_x.min()
+    write_polyline(out_dir / "sea.pli", "sea",
+                   [(west, mesh.node_y.min() - cell_size), (west, mesh.node_y.max() + cell_size)])
 
     # Upstream: observed Neeleswaram discharge (digitised from the CWC report),
     # held constant before the first and after the last record. Sea: a
@@ -203,7 +211,7 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
     fm.save(recurse=True)
     _drop_obsolete_keywords(fm.filepath)
 
-    n_faces = network._mesh2d.get_mesh2d().face_x.size
+    n_faces = mesh.face_x.size
     print(f"Wrote {fm.filepath} with {n_faces} cells of {cell_size:.0f} m.")
     return fm
 

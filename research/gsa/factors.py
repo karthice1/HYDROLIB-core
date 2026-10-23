@@ -13,8 +13,8 @@ class Factor:
         lower: Lower bound of the uniform sampling range.
         upper: Upper bound of the uniform sampling range.
         kind: How the factor is applied to the model. One of
-            "friction_multiplier", "discharge_multiplier", "waterlevel_offset"
-            or "crest_offset".
+            "friction_multiplier", "discharge_multiplier", "waterlevel_offset",
+            "crest_offset", or "custom" for factors a study applies itself.
         targets: Names the factor applies to (friction ids, forcing names or
             structure ids). An empty list means "all of that kind".
         description: Human-readable description for reports.
@@ -33,6 +33,7 @@ KINDS = {
     "discharge_multiplier",
     "waterlevel_offset",
     "crest_offset",
+    "custom",
 }
 
 
