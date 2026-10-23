@@ -98,20 +98,25 @@ def prepare(base_dir: Path, run_dir: Path, row: pd.Series) -> None:
 
 
 def metrics(map_file: Path) -> dict:
-    """Reduce a map file to scalar flood metrics."""
+    """Reduce a map file to scalar flood metrics.
+
+    Cells that are already wet at the start (sea, backwaters, river channel) are
+    excluded, so the metrics describe land that the flood inundated.
+    """
     with netCDF4.Dataset(map_file) as nc:
         depth = nc["mesh2d_waterdepth"][:]
         area = nc["mesh2d_flowelem_ba"][:]
-    wet = depth > WET_DEPTH
+    land = depth[0] <= WET_DEPTH
+    wet = (depth > WET_DEPTH) & land
     flooded = (wet * area).sum(axis=1) / 1e6
-    max_depth = depth.max(axis=0)
+    max_depth = np.where(land, depth.max(axis=0), 0.0)
     ever_wet = max_depth > WET_DEPTH
     return {
         "max_flooded_area_km2": float(flooded.max()),
         "hours_to_peak_area": int(flooded.argmax()),
         "max_inundation_extent_km2": float((ever_wet * area).sum() / 1e6),
-        "mean_max_depth_m": float(max_depth[ever_wet].mean()),
-        "max_flood_volume_mcm": float((depth * area).sum(axis=1).max() / 1e6),
+        "mean_max_depth_m": float(max_depth[ever_wet].mean()) if ever_wet.any() else 0.0,
+        "max_flood_volume_mcm": float((np.where(land, depth, 0) * area).sum(axis=1).max() / 1e6),
     }
 
 
