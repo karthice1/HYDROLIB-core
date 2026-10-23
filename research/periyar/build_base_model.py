@@ -102,6 +102,18 @@ def write_polyline(path, name, points):
     return pf
 
 
+# HYDROLIB-core 1.5.0 always writes these MDU keywords, but recent D-Flow FM
+# kernels reject them as obsolete and stop.
+OBSOLETE_MDU_KEYWORDS = ("qhrelax", "wrishp_enc")
+
+
+def _drop_obsolete_keywords(mdu_path: Path) -> None:
+    lines = Path(mdu_path).read_text().splitlines(keepends=True)
+    keep = [line for line in lines
+            if line.split("=")[0].strip().lower() not in OBSOLETE_MDU_KEYWORDS]
+    Path(mdu_path).write_text("".join(keep))
+
+
 def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
           max_elevation: float):
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -180,6 +192,7 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
     fm.output.mapinterval = [3600.0]
     fm.output.hisinterval = [600.0]
     fm.save(recurse=True)
+    _drop_obsolete_keywords(fm.filepath)
 
     n_faces = network._mesh2d.get_mesh2d().face_x.size
     print(f"Wrote {fm.filepath} with {n_faces} cells of {cell_size:.0f} m.")
