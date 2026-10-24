@@ -26,6 +26,7 @@ from hydrolib.core.dflowfm.bc.models import ForcingModel
 from research.gsa import analysis, perturb, sampling
 from research.gsa.factors import Factor
 
+from . import validate
 from .build_base_model import MANNING, REFERENCE
 
 DATA = Path(__file__).parent / "data"
@@ -36,7 +37,7 @@ FACTORS = [
     Factor("n_channel", 0.7, 1.3, "custom", (), "Channel Manning n, multiplier"),
     Factor("n_floodplain", 0.6, 1.5, "custom", (), "Floodplain Manning n, multiplier"),
     Factor("channel_depth", 2.0, 8.0, "custom", (), "Channel depth below DEM water surface (m)"),
-    Factor("dem_bias", -1.5, 0.0, "custom", (), "Floodplain terrain correction for the DSM (m)"),
+    Factor("canopy_factor", 0.3, 0.9, "custom", (), "Fraction of canopy height in the DSM"),
     Factor("q_rating", 0.85, 1.15, "custom", (), "Neeleswaram rating-curve error, multiplier"),
     Factor("q_idukki", 0.8, 1.2, "custom", (), "Idukki spill, multiplier"),
     Factor("q_idamalayar", 0.8, 1.2, "custom", (), "Idamalayar release, multiplier"),
@@ -59,15 +60,17 @@ def _release_hours(lag_hours):
 
 
 def _rewrite_rasters(run_dir: Path, base_dir: Path, row: pd.Series) -> None:
-    with rasterio.open(base_dir / "dem_model.tif") as src:
-        dem = src.read(1)
-        profile = src.profile
-    with rasterio.open(base_dir / "channel.tif") as src:
-        channel = src.read(1) > 0.5
-    with rasterio.open(base_dir / "landcover.tif") as src:
-        landcover = src.read(1)
-    valid = dem > -9000
-    bed = np.where(channel, dem - row["channel_depth"], dem + row["dem_bias"])
+    def read(name):
+        with rasterio.open(base_dir / name) as src:
+            return src.read(1), src.profile
+    dsm, profile = read("dem_raw.tif")
+    dsm_min, _ = read("dem_min.tif")
+    canopy, _ = read("chm.tif")
+    channel = read("channel.tif")[0] > 0.5
+    landcover, _ = read("landcover.tif")
+    valid = dsm > -9000
+    canopy = np.where((canopy >= 0) & (canopy < 100), canopy, 0.0)
+    bed = np.where(channel, dsm_min - row["channel_depth"], dsm - row["canopy_factor"] * canopy)
     manning = np.vectorize(lambda c: MANNING.get(int(c), 0.04), otypes=["float32"])(landcover)
     manning = np.where(channel, MANNING[80] * row["n_channel"], manning * row["n_floodplain"])
     for name, array in (("bedlevel.tif", bed), ("manning.tif", manning)):
@@ -97,7 +100,7 @@ def prepare(base_dir: Path, run_dir: Path, row: pd.Series) -> None:
     _rewrite_forcing(run_dir, row)
 
 
-def metrics(map_file: Path) -> dict:
+def metrics(map_file: Path, model_dir: Path = None, sar_file: Path = None) -> dict:
     """Reduce a map file to scalar flood metrics.
 
     Cells that are already wet at the start (sea, backwaters, river channel) are
@@ -111,16 +114,24 @@ def metrics(map_file: Path) -> dict:
     flooded = (wet * area).sum(axis=1) / 1e6
     max_depth = np.where(land, depth.max(axis=0), 0.0)
     ever_wet = max_depth > WET_DEPTH
-    return {
+    values = {
         "max_flooded_area_km2": float(flooded.max()),
         "hours_to_peak_area": int(flooded.argmax()),
         "max_inundation_extent_km2": float((ever_wet * area).sum() / 1e6),
         "mean_max_depth_m": float(max_depth[ever_wet].mean()) if ever_wet.any() else 0.0,
         "max_flood_volume_mcm": float((np.where(land, depth, 0) * area).sum(axis=1).max() / 1e6),
     }
+    if sar_file is not None:
+        v = validate.scores(model_dir, map_file, sar_file)
+        values.update({key: v[key] for key in (
+            "neeleswaram_peak_level_m", "hfl_error_m", "model_flooded_km2",
+            "all_critical_success_index", "open_critical_success_index", "open_hit_rate",
+            "open_false_alarm_ratio")})
+    return values
 
 
-def run_one(dflowfm: str, base_dir: Path, run_dir: Path, row: pd.Series, threads: int) -> dict:
+def run_one(dflowfm: str, base_dir: Path, run_dir: Path, row: pd.Series, threads: int,
+            sar_file: Path = None) -> dict:
     prepare(base_dir, run_dir, row)
     log = run_dir / "run.log"
     env = {"OMP_NUM_THREADS": str(threads)}
@@ -131,7 +142,7 @@ def run_one(dflowfm: str, base_dir: Path, run_dir: Path, row: pd.Series, threads
     map_file = run_dir / "DFM_OUTPUT_periyar" / "periyar_map.nc"
     if result.returncode != 0 or not map_file.exists():
         return {"status": "failed"}
-    values = metrics(map_file)
+    values = metrics(map_file, run_dir, sar_file)
     map_file.unlink()  # keep the disk free; scalar metrics are all the GSA needs
     return {"status": "ok", **values}
 
@@ -146,6 +157,7 @@ def main():
     parser.add_argument("--parallel", type=int, default=2, help="Simultaneous runs")
     parser.add_argument("--threads", type=int, default=2, help="OpenMP threads per run")
     parser.add_argument("--dflowfm", default="dflowfm", help="D-Flow FM executable or wrapper")
+    parser.add_argument("--sar", type=Path, help="Sentinel-1 flood map; adds validation scores")
     args = parser.parse_args()
 
     if args.method == "morris":
@@ -162,7 +174,7 @@ def main():
         if run in done.index and done.loc[run, "status"] == "ok":
             return run, done.loc[run].to_dict()
         out = run_one(args.dflowfm, args.base_dir, args.runs_dir / f"run_{run:04d}",
-                      samples.loc[run], args.threads)
+                      samples.loc[run], args.threads, args.sar)
         print(f"run {run}: {out}", flush=True)
         return run, out
 
