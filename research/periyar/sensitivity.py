@@ -158,6 +158,7 @@ def main():
     parser.add_argument("--trajectories", type=int, default=4, help="Morris trajectories")
     parser.add_argument("--base-samples", type=int, default=64, help="Sobol base samples")
     parser.add_argument("--samples", type=int, default=100, help="Latin hypercube runs")
+    parser.add_argument("--seed", type=int, default=42, help="Latin hypercube seed")
     parser.add_argument("--factors", nargs="+", help="Vary only these factors (lhs); the "
                         "others are held at NOMINAL")
     parser.add_argument("--parallel", type=int, default=2, help="Simultaneous runs")
@@ -172,7 +173,7 @@ def main():
         samples = sampling.sobol(FACTORS, base_samples=args.base_samples)
     else:
         varied = [f for f in FACTORS if not args.factors or f.name in args.factors]
-        samples = sampling.latin_hypercube(varied, samples=args.samples)
+        samples = sampling.latin_hypercube(varied, samples=args.samples, seed=args.seed)
         for name, value in NOMINAL.items():
             if name not in samples:
                 samples[name] = value
