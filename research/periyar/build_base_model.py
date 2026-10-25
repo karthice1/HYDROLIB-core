@@ -39,6 +39,7 @@ from hydrolib.core.dflowfm.polyfile.models import Point, PolyFile, PolyObject, M
 REFERENCE = pd.Timestamp("2018-08-13 00:00")  # model time zero, IST
 DURATION_HOURS = 199.0  # 13 Aug 00:00 to 21 Aug 07:00, past the Sentinel-1 pass at 06:10
 DEFAULT_DISCHARGE = Path(__file__).parent / "data" / "neeleswaram_discharge_cwc_fig3.csv"
+CHALAKUDY_DISCHARGE = Path(__file__).parent / "data" / "arangaly_discharge_cwc_fig13.csv"
 CRS = "EPSG:32643"  # WGS 84 / UTM zone 43N
 # lon/lat bounds of the lower Periyar. The window reaches 9.9 N so that the Kochi
 # inlet, the main outlet of the Vembanad backwater, is inside the model.
@@ -62,6 +63,9 @@ MANNING = {
 # Neeleswaram, where the JRC water mask shows the river running east-west at about
 # 10.185 N. The gauge's exact coordinates are not published in the CWC report.
 UPSTREAM = [(76.49, 10.172), (76.49, 10.198)]
+# The Chalakudy River enters across the northern window edge here (lon range) and
+# joins the Periyar at Puthenvelikkara; its flow is the CWC record at Arangaly.
+CHALAKUDY_LON = (76.335, 76.356)
 CANOPY_FACTOR = 0.6  # fraction of canopy height in the DSM; a GSA factor
 CHANNEL_BUFFER = 400.0  # m, corridor around the channel always kept in the domain
 
@@ -219,10 +223,18 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
     # Upstream: observed Neeleswaram discharge (digitised from the CWC report),
     # held constant before the first and after the last record. Sea: a
     # synthetic M2 + K1 tide until an observed Kochi record is available.
-    observed = pd.read_csv(discharge_csv, parse_dates=["datetime_ist"])
-    hours_obs = (observed["datetime_ist"] - REFERENCE).dt.total_seconds() / 3600.0
     hours = np.arange(0.0, DURATION_HOURS + 1.0, 1.0)
-    q = np.interp(hours, hours_obs, observed["discharge_m3s"])
+
+    def observed_flow(csv_file):
+        observed = pd.read_csv(csv_file, parse_dates=["datetime_ist"])
+        hours_obs = (observed["datetime_ist"] - REFERENCE).dt.total_seconds() / 3600.0
+        return np.interp(hours, hours_obs, observed["discharge_m3s"])
+    q = observed_flow(discharge_csv)
+    q_chalakudy = observed_flow(CHALAKUDY_DISCHARGE)
+    # Along the northern mesh edge, so D-Flow FM finds the boundary edges.
+    north = mesh.node_y.max()
+    (cx0, _), (cx1, _) = to_utm([(CHALAKUDY_LON[0], 10.3), (CHALAKUDY_LON[1], 10.3)])
+    write_polyline(out_dir / "chalakudy.pli", "chalakudy", [(cx0, north), (cx1, north)])
     h = 0.35 * np.sin(2 * np.pi * hours / 12.42) + 0.2 * np.sin(2 * np.pi * hours / 23.93)
     time_unit = f"hours since {REFERENCE:%Y-%m-%d %H:%M:%S}"
     forcing = ForcingModel(forcing=[
@@ -230,6 +242,10 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
                    quantityunitpair=[QuantityUnitPair(quantity="time", unit=time_unit),
                                      QuantityUnitPair(quantity="dischargebnd", unit="m3/s")],
                    datablock=[[t, v] for t, v in zip(hours, q)]),
+        TimeSeries(name="chalakudy_0001", function="timeseries", timeinterpolation="linear",
+                   quantityunitpair=[QuantityUnitPair(quantity="time", unit=time_unit),
+                                     QuantityUnitPair(quantity="dischargebnd", unit="m3/s")],
+                   datablock=[[t, v] for t, v in zip(hours, q_chalakudy)]),
         *[TimeSeries(name=f"sea_{i:04d}", function="timeseries", timeinterpolation="linear",
                      quantityunitpair=[QuantityUnitPair(quantity="time", unit=time_unit),
                                        QuantityUnitPair(quantity="waterlevelbnd", unit="m")],
@@ -238,6 +254,7 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
     forcing.filepath = Path("boundaries.bc")
     ext = ExtModel(boundary=[
         Boundary(quantity="dischargebnd", locationfile="upstream.pli", forcingfile=forcing),
+        Boundary(quantity="dischargebnd", locationfile="chalakudy.pli", forcingfile=forcing),
         Boundary(quantity="waterlevelbnd", locationfile="sea.pli", forcingfile=forcing),
     ])
     ext.filepath = Path("periyar.ext")
