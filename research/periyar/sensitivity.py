@@ -43,6 +43,9 @@ FACTORS = [
     Factor("q_idamalayar", 0.8, 1.2, "custom", (), "Idamalayar release, multiplier"),
     Factor("tide_offset", -0.2, 0.5, "custom", (), "Sea level offset incl. surge (m)"),
 ]
+# Values of the factors that a Latin hypercube run does not vary.
+NOMINAL = {"n_channel": 1.0, "n_floodplain": 1.0, "channel_depth": 4.0, "canopy_factor": 0.6,
+           "q_rating": 1.0, "q_idukki": 1.0, "q_idamalayar": 1.0, "tide_offset": 0.0}
 IDUKKI_LAG_HOURS = 8.0
 IDAMALAYAR_LAG_HOURS = 4.0
 WET_DEPTH = 0.1  # m, depth above which a cell counts as flooded
@@ -151,9 +154,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("base_dir", type=Path)
     parser.add_argument("runs_dir", type=Path)
-    parser.add_argument("--method", choices=["morris", "sobol"], default="morris")
+    parser.add_argument("--method", choices=["morris", "sobol", "lhs"], default="morris")
     parser.add_argument("--trajectories", type=int, default=4, help="Morris trajectories")
     parser.add_argument("--base-samples", type=int, default=64, help="Sobol base samples")
+    parser.add_argument("--samples", type=int, default=100, help="Latin hypercube runs")
+    parser.add_argument("--factors", nargs="+", help="Vary only these factors (lhs); the "
+                        "others are held at NOMINAL")
     parser.add_argument("--parallel", type=int, default=2, help="Simultaneous runs")
     parser.add_argument("--threads", type=int, default=2, help="OpenMP threads per run")
     parser.add_argument("--dflowfm", default="dflowfm", help="D-Flow FM executable or wrapper")
@@ -162,8 +168,15 @@ def main():
 
     if args.method == "morris":
         samples = sampling.morris(FACTORS, trajectories=args.trajectories)
-    else:
+    elif args.method == "sobol":
         samples = sampling.sobol(FACTORS, base_samples=args.base_samples)
+    else:
+        varied = [f for f in FACTORS if not args.factors or f.name in args.factors]
+        samples = sampling.latin_hypercube(varied, samples=args.samples)
+        for name, value in NOMINAL.items():
+            if name not in samples:
+                samples[name] = value
+        samples = samples[[f.name for f in FACTORS]]
     args.runs_dir.mkdir(parents=True, exist_ok=True)
     samples.to_csv(args.runs_dir / "samples.csv")
 
@@ -190,6 +203,8 @@ def main():
     if not ok.all():
         print(f"{(~ok).sum()} runs failed; indices are computed only when all runs succeed.")
         return
+    if args.method == "lhs":
+        return  # conditioned on the observations by analyse_runs.py, no indices
     report = []
     for metric in [c for c in results.columns if c != "status"]:
         y = results[metric].astype(float)
