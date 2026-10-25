@@ -37,7 +37,7 @@ def _polyline(path):
     return np.array([p.x for p in pts]) / 1e3, np.array([p.y for p in pts]) / 1e3
 
 
-def fig1(model_dir: Path, sar_file: Path, out: Path) -> None:
+def fig1(model_dir: Path, sar_file: Path, out: Path, label: str = "") -> None:
     with rasterio.open(model_dir / "dem_model.tif") as src:
         dem, profile = src.read(1), src.profile
     with rasterio.open(model_dir / "channel.tif") as src:
@@ -59,7 +59,9 @@ def fig1(model_dir: Path, sar_file: Path, out: Path) -> None:
     ax = axes[0]
     im = ax.imshow(np.ma.masked_less(dem, -100), extent=extent, cmap="terrain", vmin=-5, vmax=40)
     ax.imshow(np.ma.masked_where(~channel, channel), extent=extent, cmap="Blues", vmin=0, vmax=1.5)
-    for name, colour in (("upstream.pli", "red"), ("sea.pli", "black")):
+    for name, colour in (("upstream.pli", "red"), ("chalakudy.pli", "magenta"), ("sea.pli", "black")):
+        if not (model_dir / name).exists():
+            continue
         px, py = _polyline(model_dir / name)
         ax.plot(px, py, color=colour, lw=2.5, label=name.split(".")[0])
     ax.legend(loc="lower right", fontsize=8)
@@ -75,13 +77,13 @@ def fig1(model_dir: Path, sar_file: Path, out: Path) -> None:
     ax = axes[2]
     ax.imshow(np.ma.masked_less(dem, -100), extent=extent, cmap="Greys", vmin=-5, vmax=60, alpha=0.6)
     observed = _sample(sar_file, x, y, -1.0) > 0.5
-    for mask, colour, label in ((land_wet & ~observed, "tab:orange", "model only"),
+    for mask, colour, kind in ((land_wet & ~observed, "tab:orange", "model only"),
                                 (land_wet & observed, "tab:green", "both"),
                                 (~land_wet & observed & (depth0 <= WET_DEPTH), "tab:blue", "radar only")):
-        ax.scatter(x[mask] / 1e3, y[mask] / 1e3, s=1.5, c=colour, marker="s", label=label,
+        ax.scatter(x[mask] / 1e3, y[mask] / 1e3, s=1.5, c=colour, marker="s", label=kind,
                    linewidths=0)
     ax.legend(loc="lower right", fontsize=8, markerscale=6)
-    ax.set_title(f"(c) Nominal model v3, hour {hours[step]:.0f}")
+    ax.set_title(f"(c) Nominal model{label}, hour {hours[step]:.0f}")
     for ax in axes:
         ax.set_xlabel("UTM 43N easting (km)")
         ax.set_xlim(extent[0], extent[1])
@@ -120,10 +122,12 @@ def main():
     parser.add_argument("model_dir", type=Path)
     parser.add_argument("sar_file", type=Path)
     parser.add_argument("out_dir", type=Path)
-    parser.add_argument("--ensemble", type=Path, nargs="+", default=[])
+    parser.add_argument("--ensemble", type=Path, nargs="+", default=[],
+                        help="Latin hypercube run directories (Morris samples are not random)")
+    parser.add_argument("--label", default="", help="Model version shown in panel (c)")
     args = parser.parse_args()
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    fig1(args.model_dir, args.sar_file, args.out_dir / "fig1_study_area_validation.png")
+    fig1(args.model_dir, args.sar_file, args.out_dir / "fig1_study_area_validation.png", args.label)
     if args.ensemble:
         fig2(args.ensemble, args.out_dir / "fig2_conditioning.png")
 
