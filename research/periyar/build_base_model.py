@@ -228,9 +228,13 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
     def observed_flow(csv_file):
         observed = pd.read_csv(csv_file, parse_dates=["datetime_ist"])
         hours_obs = (observed["datetime_ist"] - REFERENCE).dt.total_seconds() / 3600.0
-        return np.interp(hours, hours_obs, observed["discharge_m3s"])
-    q = observed_flow(discharge_csv)
-    q_chalakudy = observed_flow(CHALAKUDY_DISCHARGE)
+        return np.interp(hours, hours_obs, observed["discharge_m3s"]), hours_obs.iloc[-1]
+    q, _ = observed_flow(discharge_csv)
+    # The Arangaly record ends on 17 Aug; after it the Chalakudy recedes in
+    # proportion to the Periyar rather than staying at its last value.
+    q_chalakudy, last_hour = observed_flow(CHALAKUDY_DISCHARGE)
+    after = hours > last_hour
+    q_chalakudy[after] = q_chalakudy[~after][-1] * q[after] / np.interp(last_hour, hours, q)
     # Along the northern mesh edge, so D-Flow FM finds the boundary edges.
     north = mesh.node_y.max()
     (cx0, _), (cx1, _) = to_utm([(CHALAKUDY_LON[0], 10.3), (CHALAKUDY_LON[1], 10.3)])
