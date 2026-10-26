@@ -2,10 +2,12 @@
 
 Only whole Morris trajectories whose runs all succeeded are used, so indices can be
 computed while the ensemble is still running. A run is called behavioural when its
-peak level near Neeleswaram is within ``--hfl-tolerance`` of the 2018 HFL and its
-flooded land at the Sentinel-1 pass is at least the radar's open-water area (radar
-misses water under tree cover, so it is a lower bound) and at most ``--sar-factor``
-times it.
+peak level near Neeleswaram is within ``--hfl-tolerance`` of the 2018 HFL and it
+agrees with the Sentinel-1 flood map. C-band radar misses water under tree cover and
+in built-up land, so the radar's open-water area is only a lower bound on the model's
+flooded land. With ``--criterion pattern`` (default) the model must also flood at least
+``--hit-rate`` of the cells the radar sees as flooded on open land; with
+``--criterion area`` its flooded land must be at most ``--sar-factor`` times the radar's.
 
 Usage:
     python -m research.periyar.analyse_runs RUNS_DIR
@@ -41,6 +43,9 @@ def main():
                         help="Radar open-water flood area on land at the pass (km2)")
     parser.add_argument("--sar-factor", type=float, default=3.0)
     parser.add_argument("--hfl-tolerance", type=float, default=0.5, help="m")
+    parser.add_argument("--criterion", choices=["pattern", "area"], default="pattern")
+    parser.add_argument("--hit-rate", type=float, default=0.75,
+                        help="Minimum share of radar-flooded open land the model floods")
     parser.add_argument("--no-indices", action="store_true",
                         help="Skip Morris indices (for a Latin hypercube ensemble)")
     args = parser.parse_args()
@@ -70,11 +75,16 @@ def morris_indices(runs_dir: Path, samples: pd.DataFrame, results: pd.DataFrame)
 def behaviour(args, samples: pd.DataFrame, results: pd.DataFrame) -> None:
     runs = results.loc[results["status"] == "ok"].join(samples)
     hfl_ok = runs["hfl_error_m"].abs() <= args.hfl_tolerance
-    extent_ok = runs["model_flooded_km2"].between(args.sar_km2, args.sar_km2 * args.sar_factor)
+    extent_ok = runs["model_flooded_km2"] >= args.sar_km2
+    if args.criterion == "pattern":
+        extent_ok &= runs["open_hit_rate"] >= args.hit_rate
+    else:
+        extent_ok &= runs["model_flooded_km2"] <= args.sar_km2 * args.sar_factor
     runs["behavioural"] = hfl_ok & extent_ok
     runs.to_csv(args.runs_dir / "runs_with_behaviour.csv")
     print(f"\n{len(runs)} runs: {hfl_ok.sum()} within {args.hfl_tolerance} m of the HFL, "
-          f"{extent_ok.sum()} within the radar extent bounds, {runs['behavioural'].sum()} both")
+          f"{extent_ok.sum()} agree with the radar ({args.criterion}), "
+          f"{runs['behavioural'].sum()} both")
     names = [f.name for f in FACTORS]
     summary = pd.concat({"all": runs[names + OUTPUTS].describe(percentiles=[0.05, 0.5, 0.95]),
                          "behavioural": runs.loc[runs["behavioural"], names + OUTPUTS]
