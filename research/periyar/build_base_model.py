@@ -153,7 +153,8 @@ def _drop_obsolete_keywords(mdu_path: Path) -> None:
 
 def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
           max_elevation: float, discharge_csv: Path = DEFAULT_DISCHARGE,
-          canopy_factor: float = CANOPY_FACTOR):
+          canopy_factor: float = CANOPY_FACTOR, terrain: str = "mean",
+          water_threshold: float = 50.0, tide_scale: float = 1.0, tide_shift_hours: float = 0.0):
     out_dir.mkdir(parents=True, exist_ok=True)
     dsm, transform = warp(sorted((data_dir / "dem").glob("*.tif")), out_dir / "dem_raw.tif",
                           cell_size, Resampling.average)
@@ -170,8 +171,13 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
     landcover, _ = warp(sorted((data_dir / "landcover").glob("*.tif")), out_dir / "landcover.tif",
                         cell_size, Resampling.mode, dtype="int16", nodata=0)
 
-    dem = np.where(dsm > -100, dsm - canopy_factor * canopy, dsm)
-    channel = (water > 50) & (water <= 100) & (landcover != 0)
+    if terrain == "min":
+        # Bare-earth stand-in for structural tests: the lowest 30 m DSM pixel in each
+        # cell is the one most likely to be ground rather than canopy or roof.
+        dem = dsm_min.copy()
+    else:
+        dem = np.where(dsm > -100, dsm - canopy_factor * canopy, dsm)
+    channel = (water > water_threshold) & (water <= 100) & (landcover != 0)
     bed = np.where(channel, dsm_min - channel_depth, dem).astype("float32")
     manning = np.vectorize(lambda c: MANNING.get(int(c), 0.04), otypes=["float32"])(landcover)
     manning[channel] = MANNING[80]
@@ -239,7 +245,9 @@ def build(data_dir: Path, out_dir: Path, cell_size: float, channel_depth: float,
     north = mesh.node_y.max()
     (cx0, _), (cx1, _) = to_utm([(CHALAKUDY_LON[0], 10.3), (CHALAKUDY_LON[1], 10.3)])
     write_polyline(out_dir / "chalakudy.pli", "chalakudy", [(cx0, north), (cx1, north)])
-    h = 0.35 * np.sin(2 * np.pi * hours / 12.42) + 0.2 * np.sin(2 * np.pi * hours / 23.93)
+    tide_hours = hours + tide_shift_hours
+    h = tide_scale * (0.35 * np.sin(2 * np.pi * tide_hours / 12.42)
+                      + 0.2 * np.sin(2 * np.pi * tide_hours / 23.93))
     time_unit = f"hours since {REFERENCE:%Y-%m-%d %H:%M:%S}"
     forcing = ForcingModel(forcing=[
         TimeSeries(name="upstream_0001", function="timeseries", timeinterpolation="linear",
@@ -291,6 +299,13 @@ if __name__ == "__main__":
                         help="Upstream discharge series with datetime_ist and discharge_m3s columns")
     parser.add_argument("--canopy-factor", type=float, default=CANOPY_FACTOR,
                         help="Fraction of canopy height removed from the DSM")
+    parser.add_argument("--terrain", choices=["mean", "min"], default="mean",
+                        help="Floodplain terrain: canopy-corrected cell mean, or the cell minimum of the DSM")
+    parser.add_argument("--water-threshold", type=float, default=50.0,
+                        help="JRC water occurrence (%%) above which a cell is channel")
+    parser.add_argument("--tide-scale", type=float, default=1.0, help="Multiplier on the tidal amplitude")
+    parser.add_argument("--tide-shift-hours", type=float, default=0.0, help="Phase shift of the tide in hours")
     args = parser.parse_args()
     build(args.data_dir, args.out_dir, args.cell_size, args.channel_depth, args.max_elevation,
-          args.discharge_csv, args.canopy_factor)
+          args.discharge_csv, args.canopy_factor, args.terrain, args.water_threshold,
+          args.tide_scale, args.tide_shift_hours)

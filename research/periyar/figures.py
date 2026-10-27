@@ -150,6 +150,40 @@ def fig3(time_series_csv: Path, out: Path, sar_km2: float = 22.0) -> None:
     plt.close(fig)
 
 
+def fig_confusion(states, out: Path, sar_file: Path) -> None:
+    """Model against radar at the radar pass, cell by cell, for several runs."""
+    from matplotlib.colors import ListedColormap
+    from matplotlib.patches import Patch
+    from .validate import _sample
+    fig, axes = plt.subplots(1, len(states), figsize=(4.6 * len(states), 5.4),
+                             constrained_layout=True, sharex=True, sharey=True)
+    colours = ["#d9d9d9", "#e66101", "#5e3c99", "#1b7837"]  # dry in both, model only, radar only, both
+    for ax, (title, npz) in zip(np.atleast_1d(axes), states.items()):
+        s = np.load(npz)
+        fraction = _sample(sar_file, s["x"], s["y"], -1.0)
+        land = s["land"] & (fraction >= 0)
+        model, radar = s["model_wet"], fraction > 0.5
+        code = np.where(model & radar, 3, np.where(radar, 2, np.where(model, 1, 0)))
+        ax.scatter(s["x"][land] / 1e3, s["y"][land] / 1e3, c=code[land], s=1.2, marker="s",
+                   cmap=ListedColormap(colours), vmin=0, vmax=3, linewidths=0)
+        hits, misses = int((code[land] == 3).sum()), int((code[land] == 2).sum())
+        false_alarms = int((code[land] == 1).sum())
+        ax.set_title(f"{title}\nCSI {hits / (hits + misses + false_alarms):.3f}", fontsize=11)
+        ax.set_aspect("equal")
+        ax.tick_params(labelsize=9)
+        ax.set_xlabel("Easting (km, UTM 43N)", fontsize=10)
+    np.atleast_1d(axes)[0].set_ylabel("Northing (km)", fontsize=10)
+    ax0 = np.atleast_1d(axes)[0]
+    x0, y0 = ax0.get_xlim()[0] + 2, ax0.get_ylim()[0] + 2
+    ax0.plot([x0, x0 + 10], [y0, y0], "k-", lw=3)
+    ax0.text(x0 + 5, y0 + 1, "10 km", ha="center", fontsize=9)
+    fig.legend(handles=[Patch(color=colours[i], label=l) for i, l in
+                        [(3, "flooded in both"), (1, "model only"), (2, "radar only"), (0, "dry in both")]],
+               loc="lower center", ncol=4, fontsize=10, bbox_to_anchor=(0.5, -0.06))
+    fig.savefig(out, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("model_dir", type=Path)
