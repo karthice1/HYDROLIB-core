@@ -1,0 +1,352 @@
+\documentclass[preprint,12pt,authoryear]{elsarticle}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage{lineno}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xurl}
+
+\newcommand{\kmsq}{km\textsuperscript{2}}
+\newcommand{\cumecs}{m\textsuperscript{3}\,s\textsuperscript{-1}}
+\newcommand{\Mcm}{million m\textsuperscript{3}}
+
+\journal{Environmental Modelling \& Software}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{How much can one gauge mark and one radar image constrain flood-model uncertainty? Global sensitivity analysis of the 2018 Periyar flood with open data}
+
+\author[kahe]{Karthik V\corref{cor1}}
+\ead{karthik.vasanthakumar@kahedu.edu.in}
+\author[kahe]{Roopa D}
+\cortext[cor1]{Corresponding author.}
+\affiliation[kahe]{organization={Karpagam Academy of Higher Education},
+            city={Coimbatore},
+            state={Tamil Nadu},
+            country={India}}
+
+\begin{abstract}
+Flood models of data-scarce tropical basins rest on global terrain, land-cover and water-mask data whose errors are rarely quantified together. We built an open-data two-dimensional D-Flow FM model of the lower Periyar River, Kerala, for the August 2018 flood using the HYDROLIB-core Python library. Boundary flows were digitised from the Central Water Commission flood report. We then screened eight uncertain factors with the Morris method: channel and floodplain roughness, channel depth, canopy-height correction of the Copernicus DSM, rating-curve error, two dam releases and sea level. Validating the first model against the 12.4~m high-flood level (HFL) at Neeleswaram and a Sentinel-1 flood map exposed three structural errors: an inflow placed off the channel, a missing tidal outlet, and an uncorrected DSM. Fixing them cut the peak-level error from +10.4~m to +2.4~m. Sensitivity analysis alone did not reveal them. The radar map also exposed a missing tributary inflow (the Chalakudy River), whose addition doubled the share of radar-flooded land the model reproduces. On the revised model (180 Morris runs), peak flooded area was most sensitive to channel depth ($\mu^*$ = 150~\kmsq), floodplain roughness (97~\kmsq) and rating-curve error (63~\kmsq); sea level was negligible (6~\kmsq). A 200-run Latin hypercube over the five leading factors was then conditioned on the HFL (within 0.5~m) and on the radar map, treating its 22~\kmsq{} of open-water flooding as a lower bound and requiring the model to reproduce at least 75\% of it on open land. The 7 behavioural runs give a peak flooded area of 158--182~\kmsq, against a prior 5--95\% range of 108--327~\kmsq{} (89\% narrower), and a peak volume of 444--521~\Mcm{} against 349--1,110~\Mcm. One gauge mark and one radar scene can thus remove most of the parameter uncertainty in an open-data flood model, while equifinality between channel depth and roughness remains.
+\end{abstract}
+
+\begin{highlights}
+\item Open-data 2D model of the 2018 Periyar flood built and run with HYDROLIB-core
+\item Morris screening ranks channel depth, floodplain roughness and rating error first
+\item Model validation exposed three structural errors that sensitivity analysis missed
+\item One HFL mark and one Sentinel-1 scene narrow the peak flooded-area range by 89\%
+\item Canopy correction of the DSM is a first-order uncertainty in tropical floodplains
+\end{highlights}
+
+\begin{keyword}
+global sensitivity analysis \sep Morris method \sep flood inundation modelling \sep D-Flow FM \sep Sentinel-1 \sep Kerala 2018 flood
+\end{keyword}
+
+\end{frontmatter}
+
+\linenumbers
+
+\section{Introduction}
+\label{sec:intro}
+
+The floods and landslides of August 2018 in Kerala took 433 lives \citep{pdna2018}. At Neeleswaram the Periyar peaked at about 8,800~\cumecs{} on 16 August and reached EL~12.4~m, 1.3~m above the previous record of 1974 \citep{cwc2018}. Events of this kind are increasingly modelled in two dimensions with open global data: the Copernicus DEM \citep{esa2021}, ESA WorldCover \citep{zanaga2022}, the JRC Global Surface Water record \citep{pekel2016} and global canopy-height maps \citep{tolan2024} make a 2D model possible almost anywhere. Each of these data sets carries errors, however. A digital surface model (DSM) is not a terrain model, and a coarse water mask misses channel geometry.
+
+Global sensitivity analysis (GSA) is the standard way to find which of these uncertain inputs matter. Morris elementary effects \citep{morris1991}, summarised by the mean absolute effect $\mu^*$ \citep{campolongo2007}, screen many factors at low cost, within the broader framework of \citet{saltelli2008}. Conditioning on observations, as in GLUE \citep{beven1992}, then narrows the predictions to those consistent with what was seen. Studies of 2D flood models usually assume a validated model and treat the observations separately. In data-scarce basins the model structure itself is uncertain, and few studies show how GSA and sparse observations interact. Fewer still do so for the monsoon floodplains of South Asia, or report how validation changed the model before the GSA was run.
+
+This paper makes four contributions:
+\begin{enumerate}
+\item A reproducible open-data workflow in Python (HYDROLIB-core) from global rasters to an ensemble of D-Flow FM runs.
+\item Evidence that validation against two cheap observations exposed structural errors that GSA alone did not.
+\item A ranking of eight factors for flood extent, volume, timing and gauge level.
+\item A quantified reduction of predictive uncertainty from one HFL mark and one Sentinel-1 scene.
+\end{enumerate}
+
+\subsection{Related work}
+
+\paragraph{Uncertainty and sensitivity in flood inundation models}
+\citet{teng2017} review the main classes of inundation model and how their uncertainty is analysed. \citet{pianosi2016} give a systematic review of sensitivity analysis for environmental models with a practical workflow; we follow its separation of factor screening (here Morris) from the conditioning of predictions. \citet{hall2005} applied variance-based (Sobol') sensitivity analysis to a raster inundation model of a River Thames reach checked against a radar flood outline, and found that channel roughness dominated the predicted outline and depth; splitting the channel into subreaches showed where the variance came from. \citet{pappenberger2005} carried uncertainty from ensemble rainfall forecasts through a rainfall-runoff model into LISFLOOD-FP, weighting ten roughness sets by their likelihood. \citet{savage2016} showed that grids coarser than about 50~m change flow paths and shift the best-fitting parameters, and that probabilistic flood maps lose reliability beyond about 100~m. This bears directly on our 200~m grid.
+
+\paragraph{Conditioning on flood extent}
+GLUE \citep{beven1992} rejects parameter sets that fail an observation and keeps the rest as behavioural. \citet{aronica2002} applied it to an inundation model using binary wet/dry pattern information, and \citet{bates2004} updated flood inundation likelihoods with flood extent data in a Bayesian scheme. \citet{montanari2009} used water stages derived from radar flood extents to calibrate and sequentially update a coupled hydrologic-hydraulic model. These studies use extents over largely open floodplains. In the lower Periyar most of the floodplain is under tree cover, so the radar extent can only bound the model from below, and we test what that weaker information can still constrain.
+
+\paragraph{Terrain data}
+Global elevation models such as the Copernicus DEM are surface models that include trees and buildings. \citet{hawker2022} produced FABDEM, a 30~m version of the Copernicus DEM with forests and buildings removed. We instead remove a fraction of canopy height and treat that fraction as an uncertain factor, so its effect on the flood can be measured rather than fixed in preprocessing.
+
+\paragraph{The 2018 Kerala flood}
+\citet{mishra2018} placed the August 2018 event in its hydroclimatic context. \citet{sudheer2019} modelled the Periyar basin with HEC-HMS and found that the Idukki peak release (about 1,860~\cumecs) was smaller than the flow of the nearly uncontrolled Perinjankutty tributary (about 3,500~\cumecs). Reservoir operation lowered the Neeleswaram peak by about 17\% compared with a no-dam case, and earlier emptying of the reservoirs would have lowered it by a further 16--21\%, still well above the bankfull capacity of about 4,200~\cumecs. They estimated a return period of about 142 years for the Neeleswaram flood. These studies are hydrological. We found no two-dimensional inundation model of the lower Periyar for 2018 whose uncertainty has been analysed, and that is the gap this paper fills.
+
+\section{Study area and data}
+\label{sec:data}
+
+The model covers the lower Periyar from near Neeleswaram (the CWC gauge-and-discharge site) to the Arabian Sea, from 76.15 to 76.55\textdegree E and 9.9 to 10.3\textdegree N (Fig.~\ref{fig:study}a). That includes the Munambam and Kochi inlets and the northern Vembanad backwater. The 2018 peak at Neeleswaram was about 8,800~\cumecs, with a high-flood level of EL~12.4~m \citep{cwc2018}. Table~\ref{tab:data} lists the data.
+
+\begin{table}[htbp]
+\centering
+\caption{Data used to build and test the model.}
+\label{tab:data}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{2.8cm}l@{}}
+\toprule
+Data & Source & Use & Resolution \\
+\midrule
+Terrain (DSM) & Copernicus DEM GLO-30 \citep{esa2021} & Bed level & 30 m \\
+Canopy height & Meta/WRI global canopy height \citep{tolan2024} & DSM correction & 1 m \\
+Land cover & ESA WorldCover 2021 \citep{zanaga2022} & Manning $n$ per class & 10 m \\
+Permanent water & JRC Global Surface Water occurrence \citep{pekel2016} & Channel mask & 30 m \\
+Neeleswaram discharge, 14--20 Aug & \citet{cwc2018}, Fig.~3 (digitised) & Upstream boundary & 6-hourly \\
+Arangaly (Chalakudy) discharge, 14--17 Aug & \citet{cwc2018}, Fig.~13 (digitised) & Tributary inflow & digitised \\
+Idukki spill, 9--18 Aug & \citet{cwc2018}, Fig.~4 (digitised) & Release factor & hourly \\
+Idamalayar release, 1 Jul--23 Aug & \citet{cwc2018}, Fig.~5 (digitised) & Release factor & daily \\
+HFL at Neeleswaram & \citet{cwc2018} & Validation & one value \\
+Sentinel-1A GRD, 21 Aug 2018 00:40 UTC, and 28 Jul 2018 & Copernicus, AWS open data & Validation flood map & 20 m \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The sea boundary uses a synthetic M2 + K1 tide, as no observed Kochi record could be reached, and the exact gauge coordinates are not published.
+
+\section{Methods}
+\label{sec:methods}
+
+\subsection{Hydrodynamic model}
+D-Flow FM \citep{kernkamp2011}, built from the Deltares source code, runs on a 200~m rectilinear grid of 32,337 cells, clipped to land below 20~m plus a 400~m corridor around the channel. The run spans 13 August 00:00 to 21 August 07:00 IST. Every cell with JRC water occurrence above 50\% is channel, with its bed set a channel depth below the lowest DSM value in the cell. The floodplain bed is the DSM minus a canopy factor times the mean canopy height. Manning $n$ follows WorldCover classes (0.025--0.10). The upstream boundary takes the Neeleswaram discharge. A second inflow on the north edge carries the Chalakudy River, using the CWC Arangaly record (14--17 August), which then recedes in proportion to the Periyar. The west and south edges take sea level. All model files are written with HYDROLIB-core.
+
+\subsection{Uncertain factors}
+Table~\ref{tab:factors} lists the eight factors and their ranges. The ranges and the dam lags are expert assumptions.
+
+\begin{table}[htbp]
+\centering
+\caption{Uncertain factors and their ranges.}
+\label{tab:factors}
+\small
+\begin{tabularx}{\textwidth}{@{}ll>{\raggedright\arraybackslash}X@{}}
+\toprule
+Factor & Range & Meaning \\
+\midrule
+n\_channel & 0.7--1.3 & Multiplier on channel Manning $n$ \\
+n\_floodplain & 0.6--1.5 & Multiplier on floodplain Manning $n$ \\
+channel\_depth & 2--8 m & Channel bed below the DSM water surface \\
+canopy\_factor & 0.3--0.9 & Fraction of canopy height removed from the DSM \\
+q\_rating & 0.85--1.15 & Neeleswaram rating-curve error \\
+q\_idukki & 0.8--1.2 & Idukki spill multiplier, lagged 8 h \\
+q\_idamalayar & 0.8--1.2 & Idamalayar release multiplier, lagged 4 h \\
+tide\_offset & $-0.2$ to $+0.5$ m & Sea-level offset including surge \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Screening}
+A Morris design with 20 trajectories and 4 levels (180 runs) was generated with SALib \citep{herman2017}. Each run is reduced to peak flooded land, peak flood volume, mean maximum depth, time to peak, and the validation scores below. Cells that are wet at the start are excluded, so the metrics describe land that the flood inundated.
+
+\subsection{Validation and conditioning}
+The peak channel water level within 500~m of the inflow section is compared with the 12.4~m HFL. The Sentinel-1 flood map uses calibrated VV backscatter below an Otsu threshold together with a drop of more than 3~dB from 28 July, minus permanent water. C-band radar misses water under tree cover and in built-up land, so the radar's 22~\kmsq{} of open-water flooding is treated as a lower bound on the model's flooded land, not as a target. A run is behavioural when its HFL error is within 0.5~m, its flooded land at the radar pass is at least 22~\kmsq, and it floods at least 75\% of the open-land cells (WorldCover cropland, grassland, bare and herbaceous wetland) that the radar shows as flooded. An earlier rule that also capped the model area at three times the radar's rejected every run of the final model (Section~\ref{sec:conditioning}). A 200-run Latin hypercube over the five leading factors then gives the conditioned prediction bounds.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Validation changed the model before the GSA}
+Four revisions brought the nominal model from a 10~m level error to about 2~m (Table~\ref{tab:versions}). Adding the Chalakudy inflow (v4) doubled the share of radar-flooded land the model catches, from 28\% to 54\% (open land: 66\% to 91\%), because most radar flooding lies at the Chalakudy--Periyar confluence (Fig.~\ref{fig:study}). It also raised the total flooded land. A test with land infiltration of up to 10~mm\,h\textsuperscript{-1} removed only 25~\kmsq{} of it, so missing infiltration does not explain the excess.
+
+\begin{table}[htbp]
+\centering
+\caption{Model revisions and their nominal scores against the two observations.}
+\label{tab:versions}
+\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedleft\arraybackslash}p{2.2cm}>{\raggedleft\arraybackslash}p{3.2cm}@{}}
+\toprule
+Version & Change & HFL error (m) & Flooded land at radar pass (\kmsq) \\
+\midrule
+v1 & First open-data model & +10.4\textsuperscript{a} & 350 \\
+v2 & Inflow on the channel, continuous channel, canopy correction & +2.3 & 149 \\
+v3 & Kochi inlet and tidal south edge, run past the pass & +2.4 & 123 \\
+v4 & Chalakudy River inflow added (CWC Arangaly record) & +2.4 & 190 \\
+v5 & Chalakudy flow recedes after its record ends instead of holding 799~\cumecs & +2.4 & 180 \\
+Radar & Sentinel-1, 21 Aug 2018 & 0 (HFL 12.4 m) & 22 (open water only) \\
+\bottomrule
+\end{tabularx}
+\par\smallskip
+\raggedright\footnotesize \textsuperscript{a}v1 was scored on the highest cell near the inflow, which sat 2~km off the mesh; later versions use channel cells. v1 and v2 are scored at hour 192, v3 to v5 at hour 198.
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig1.png}
+\caption{(a) Model terrain (canopy-corrected DSM), channel and boundaries. (b) Sentinel-1 open-water flood fraction, 21 August 2018 06:10 IST. (c) Nominal v5 model at the radar pass: flooded land in the model only, in both, and in the radar only.}
+\label{fig:study}
+\end{figure}
+
+The screening (Section~\ref{sec:screening}) was run on v4 and the conditioning ensemble (Section~\ref{sec:conditioning}) on v5. The only difference between them is the Chalakudy flow after 17 August 20:00, which mostly falls after the Periyar peak. The screening was not repeated on v5, so we assume that its ranking carries over. A first 180-run Morris screening on v1 ranked the same top three factors, but on a model that failed both checks; it is reported only as a cautionary result.
+
+\subsection{Screening of model v4}
+\label{sec:screening}
+All 180 runs completed. Peak flooded land ranged from 90 to 388~\kmsq{} and peak volume from 281 to 1,385~\Mcm. Channel depth, floodplain roughness and rating-curve error lead peak area, volume and the Neeleswaram level (Table~\ref{tab:morris}). Floodplain roughness dominates timing ($\mu^*$ = 45~h for time to peak), followed by the canopy factor (23~h). Sea level is negligible inland of the inlets ($\mu^*$ = 6~\kmsq, and 0.00~m for the gauge level). High $\sigma$ for the top factors marks strong interactions. The three leading factors together account for about 70\% of the summed $\mu^*$ for area; the confidence intervals of the next three overlap. The ranking is the same as on v3 (top three $\mu^*$ = 157, 93 and 74~\kmsq), so adding the Chalakudy inflow changed the magnitudes but not the order.
+
+\begin{table}[htbp]
+\centering
+\caption{Morris indices on model v4 (180 runs): $\mu^*$ with $\sigma$ in brackets, ordered by peak flooded land.}
+\label{tab:morris}
+\footnotesize
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Factor & Peak land & Peak volume & Time to peak & Peak level \\
+ & (\kmsq) & (\Mcm) & (h) & (m) \\
+\midrule
+Channel depth & 150 (55) & 531 (250) & 13.3 (13.6) & 2.92 (0.63) \\
+Floodplain roughness & 97 (90) & 401 (358) & 45.1 (55.4) & 2.86 (2.46) \\
+Rating-curve error & 63 (69) & 252 (285) & 18.8 (30.2) & 2.00 (1.31) \\
+Canopy factor & 40 (36) & 56 (118) & 23.2 (43.8) & 1.74 (1.98) \\
+Idukki release & 37 (72) & 144 (291) & 19.2 (41.6) & 1.00 (1.78) \\
+Channel roughness & 31 (15) & 121 (71) & 7.5 (8.1) & 1.00 (0.17) \\
+Idamalayar release & 14 (36) & 55 (147) & 7.0 (14.2) & 0.36 (0.60) \\
+Sea-level offset & 6 (1) & 5 (2) & 3.8 (7.0) & 0.00 (0.00) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Conditioning on observations}
+\label{sec:conditioning}
+The five leading factors were sampled by Latin hypercube (seed 42), with the other three at nominal values; all 200 runs completed. 21 runs met the HFL within 0.5~m, 158 reproduced at least 75\% of the radar's open-land flooding, and 7 met both. Their peak flooded land is 158--182~\kmsq{} and peak volume 444--521~\Mcm, against a prior 5--95\% range of 108--327~\kmsq{} and 349--1,110~\Mcm{} (full range 89--360~\kmsq; Fig.~\ref{fig:conditioning}a). The behavioural runs still span channel depths of 2.9--6.9~m and floodplain roughness multipliers of 0.61--1.43, but all have a canopy factor of 0.63--0.90 and a rating error of 0.86--1.07. Depth and roughness again compensate each other (correlation 0.53 across the 7 runs; Fig.~\ref{fig:conditioning}b).
+
+The result is stable to the thresholds. At $\pm$0.25~m and a 75\% hit rate, 3 runs give 158--176~\kmsq; at $\pm$0.5~m and 60\%, 21 runs give 135--182~\kmsq; at $\pm$1.0~m and 75\%, 23 runs give 157--240~\kmsq. No run reproduces 90\% of the radar's open-land flooding. The earlier v3 conditioning, with an area cap at three times the radar's, is superseded: on v4 and v5 no run met that cap, because every run still floods 83~\kmsq{} or more at the radar pass (Section~\ref{sec:discussion}). Spatial agreement with the radar stays poor (open-land critical success index at most 0.10) in every run.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig2.png}
+\caption{(a) Peak flooded land across the 200-run v5 ensemble (grey) and the 7 runs that match both the HFL and the radar pattern (blue). (b) Channel depth against floodplain roughness multiplier for all runs and behavioural runs.}
+\label{fig:conditioning}
+\end{figure}
+
+\paragraph{Flooded land through time}
+The 7 behavioural runs were run again to save flooded land every hour (Fig.~\ref{fig:timeseries}). Their peaks (158--182~\kmsq) match the ensemble values exactly. Four runs, all with channel depths of 6.3--6.9~m, peak on 17 August at 07:00--08:00, about a day after the Neeleswaram peak. The other three (depths 2.9--5.1~m) level off near 100--110~\kmsq{} and then flood a further 50--70~\kmsq{} between 17 and 19 August, after the river has begun to fall; their peaks come on 18--19 August. Two of these also have the lowest canopy factors (0.63--0.65), which leaves the floodplain higher. The late rise looks like water crossing a terrain threshold, possibly an embankment-like ridge in the DSM, rather than a response to inflow. In every run drainage is slow: by the radar pass, when the Neeleswaram flow had fallen by about three quarters, the runs still flood 112--143~\kmsq, or 72--90\% of their peak.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig3.png}
+\caption{Flooded land (cells dry at the start) through time for the 7 behavioural v5 runs (blue), with the CWC discharges at Neeleswaram and Arangaly (grey, right axis). The diamond marks the 22~\kmsq{} of open-water flooding on the Sentinel-1 image of 21 August 06:10 IST, a lower bound because radar misses water under trees and in built-up land.}
+\label{fig:timeseries}
+\end{figure}
+
+\section{Discussion}
+\label{sec:discussion}
+
+In open-data flood models, sparse observations do two jobs that GSA cannot. They expose structural errors, and they cut predictive spread far more than ranking factors does. The v1 screening ranked the right factors on a model that was 10~m wrong, which is a warning for GSA studies without validation.
+
+\paragraph{Channel geometry dominates}
+Channel depth leads peak area, volume and the gauge level. The lack of bathymetry is therefore the largest single uncertainty, which argues for cheap channel surveys or satellite-derived depth.
+
+\paragraph{Canopy correction matters}
+The canopy factor ranks fourth for area and second for timing, and every behavioural run removes 63--90\% of the canopy height. DSM-based models of vegetated tropical floodplains should treat this correction as an explicit uncertain factor, or test a bare-earth product such as FABDEM \citep{hawker2022}.
+
+\paragraph{Equifinality}
+Channel depth and floodplain roughness compensate each other (correlation 0.53 in the 7 behavioural v5 runs), so one HFL mark cannot separate them, in line with the equifinality that motivates GLUE \citep{beven1992}. A second gauge or an image taken near the peak could.
+
+\paragraph{Radar limits}
+Over 80\% of land cells are tree cover, where C-band radar sees little open water, and the only scene was taken 5 days after the peak. That is why the spatial critical success index stays below 0.10, and why the radar is used here as a lower bound on area together with a test of how much of its open-land flooding the model reproduces, rather than as a binary pattern to match \citep{aronica2002}.
+
+\subsection{Limitations}
+\begin{itemize}
+\item Slow drainage. At the radar pass, five days after the peak, every run of v4 still floods 83--276~\kmsq{} of land against 22~\kmsq{} of open water on the radar, about 11 times more even on open land. The radar misses water under trees, but the model also drains too slowly (Fig.~\ref{fig:timeseries}), probably because of DSM artefacts (buildings, embankments) and channel geometry that a 200~m grid and a water mask cannot resolve \citep{savage2016}.
+\item The tide is synthetic, and there is no local rainfall on the model domain, which biases flooding low. The Morris screening shows that sea level has a negligible effect on flooded land ($\mu^*$ = 6~\kmsq), which limits the consequence of the synthetic tide.
+\item Boundary flows were digitised from report figures, and gauge coordinates were inferred from the water mask.
+\item The model uses 200~m cells and one event; the Morris levels are coarse, so the conditioning ensemble carries the bounds.
+\item Factor ranges and dam lags are expert assumptions.
+\end{itemize}
+
+\section{Conclusions}
+\label{sec:conclusions}
+
+An open-data D-Flow FM model of the 2018 Periyar flood, built with HYDROLIB-core, was screened with 180 Morris runs and conditioned with a 200-run Latin hypercube. Validation against one high-flood level and one Sentinel-1 scene exposed four structural problems that the sensitivity analysis did not, including a missing tributary. Channel depth, floodplain roughness and rating-curve error dominate the flooded area, and sea level is negligible. Conditioning on the same two observations narrowed the peak flooded-area range by 89\%, to 158--182~\kmsq, while leaving channel depth and floodplain roughness in compensation. The remaining gap between the model and the radar after the peak points to slow drainage on the DSM, which channel bathymetry, bare-earth terrain and a second observation time would address.
+
+\section*{Code and data availability}
+All scripts (model build, sensitivity runs, radar flood map, validation, analysis and figures) are in the HYDROLIB-core fork at \url{https://github.com/karthice1/HYDROLIB-core}, under \texttt{research/periyar} and \texttt{research/gsa}. The digitised CWC flow records and the per-run results of every ensemble are in \texttt{research/periyar/data} and \texttt{research/periyar/results}. The release will be archived with a DOI before publication.
+
+\section*{CRediT authorship contribution statement}
+\textbf{Karthik V:} [to be completed by the authors]. \textbf{Roopa D:} [to be completed by the authors].
+
+\section*{Declaration of competing interest}
+[To be completed by the authors.]
+
+\section*{Acknowledgements}
+[To be completed by the authors.]
+
+\begin{thebibliography}{99}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+
+\bibitem[{Aronica et~al.(2002)Aronica, Bates and Horritt}]{aronica2002}
+Aronica, G.T., Bates, P.D., Horritt, M.S., 2002. Assessing the uncertainty in distributed model predictions using observed binary pattern information within {GLUE}. Hydrological Processes 16, 2001--2016.
+
+\bibitem[{Bates et~al.(2004)Bates, Horritt, Aronica and Beven}]{bates2004}
+Bates, P.D., Horritt, M.S., Aronica, G., Beven, K.J., 2004. Bayesian updating of flood inundation likelihoods conditioned on flood extent data. Hydrological Processes 18, 3347--3370.
+
+\bibitem[{Beven and Binley(1992)}]{beven1992}
+Beven, K., Binley, A., 1992. The future of distributed models: model calibration and uncertainty prediction. Hydrological Processes 6, 279--298. \url{https://doi.org/10.1002/hyp.3360060305}.
+
+\bibitem[{Campolongo et~al.(2007)Campolongo, Cariboni and Saltelli}]{campolongo2007}
+Campolongo, F., Cariboni, J., Saltelli, A., 2007. An effective screening design for sensitivity analysis of large models. Environmental Modelling \& Software 22, 1509--1518. \url{https://doi.org/10.1016/j.envsoft.2006.10.004}.
+
+\bibitem[{CWC(2018)}]{cwc2018}
+CWC (Central Water Commission), 2018. Study Report: Kerala Floods of August 2018. Hydrological Studies Organisation, Hydrology (S) Directorate, Government of India, New Delhi.
+
+\bibitem[{ESA(2021)}]{esa2021}
+ESA, 2021. Copernicus DEM GLO-30 (Copernicus Digital Elevation Model, 30 m). European Space Agency. \url{https://doi.org/10.5270/ESA-c5d3d65}. \textcopyright{} DLR e.V. 2010--2014 and \textcopyright{} Airbus Defence and Space GmbH 2014--2018, provided under COPERNICUS by the European Union and ESA.
+
+\bibitem[{Government of Kerala and UN(2018)}]{pdna2018}
+Government of Kerala and UN, 2018. Kerala Post Disaster Needs Assessment: Floods and Landslides, August 2018. Government of Kerala with the United Nations (UNDP), Thiruvananthapuram.
+
+\bibitem[{Hall et~al.(2005)Hall, Tarantola, Bates and Horritt}]{hall2005}
+Hall, J.W., Tarantola, S., Bates, P.D., Horritt, M.S., 2005. Distributed sensitivity analysis of flood inundation model calibration. Journal of Hydraulic Engineering 131, 117--126. \url{https://doi.org/10.1061/(ASCE)0733-9429(2005)131:2(117)}.
+
+\bibitem[{Hawker et~al.(2022)Hawker, Uhe, Paulo, Sosa, Savage, Sampson and Neal}]{hawker2022}
+Hawker, L., Uhe, P., Paulo, L., Sosa, J., Savage, J., Sampson, C., Neal, J., 2022. A 30 m global map of elevation with forests and buildings removed. Environmental Research Letters 17, 024016. \url{https://doi.org/10.1088/1748-9326/ac4d4f}.
+
+\bibitem[{Herman and Usher(2017)}]{herman2017}
+Herman, J., Usher, W., 2017. {SALib}: An open-source Python library for sensitivity analysis. Journal of Open Source Software 2, 97. \url{https://doi.org/10.21105/joss.00097}.
+
+\bibitem[{Kernkamp et~al.(2011)Kernkamp, Van~Dam, Stelling and de~Goede}]{kernkamp2011}
+Kernkamp, H.W.J., Van Dam, A., Stelling, G.S., de Goede, E.D., 2011. Efficient scheme for the shallow water equations on unstructured grids with application to the Continental Shelf. Ocean Dynamics 61, 1175--1188. \url{https://doi.org/10.1007/s10236-011-0423-6}.
+
+\bibitem[{Mishra and Shah(2018)}]{mishra2018}
+Mishra, V., Shah, H.L., 2018. Hydroclimatological perspective of the Kerala flood of 2018. Journal of the Geological Society of India 92, 645--650. \url{https://doi.org/10.1007/s12594-018-1079-3}.
+
+\bibitem[{Montanari et~al.(2009)Montanari, Hostache, Matgen, Schumann, Pfister and Hoffmann}]{montanari2009}
+Montanari, M., Hostache, R., Matgen, P., Schumann, G., Pfister, L., Hoffmann, L., 2009. Calibration and sequential updating of a coupled hydrologic-hydraulic model using remote sensing-derived water stages. Hydrology and Earth System Sciences 13, 367--380. \url{https://doi.org/10.5194/hess-13-367-2009}.
+
+\bibitem[{Morris(1991)}]{morris1991}
+Morris, M.D., 1991. Factorial sampling plans for preliminary computational experiments. Technometrics 33, 161--174.
+
+\bibitem[{Pappenberger et~al.(2005)Pappenberger, Beven, Hunter, Bates, Gouweleeuw, Thielen and de~Roo}]{pappenberger2005}
+Pappenberger, F., Beven, K.J., Hunter, N.M., Bates, P.D., Gouweleeuw, B.T., Thielen, J., de Roo, A.P.J., 2005. Cascading model uncertainty from medium range weather forecasts (10 days) through a rainfall-runoff model to flood inundation predictions within the European Flood Forecasting System ({EFFS}). Hydrology and Earth System Sciences 9, 381--393. \url{https://doi.org/10.5194/hess-9-381-2005}.
+
+\bibitem[{Pekel et~al.(2016)Pekel, Cottam, Gorelick and Belward}]{pekel2016}
+Pekel, J.F., Cottam, A., Gorelick, N., Belward, A.S., 2016. High-resolution mapping of global surface water and its long-term changes. Nature 540, 418--422. \url{https://doi.org/10.1038/nature20584}.
+
+\bibitem[{Pianosi et~al.(2016)Pianosi, Beven, Freer, Hall, Rougier, Stephenson and Wagener}]{pianosi2016}
+Pianosi, F., Beven, K., Freer, J., Hall, J.W., Rougier, J., Stephenson, D.B., Wagener, T., 2016. Sensitivity analysis of environmental models: A systematic review with practical workflow. Environmental Modelling \& Software 79, 214--232. \url{https://doi.org/10.1016/j.envsoft.2016.02.008}.
+
+\bibitem[{Saltelli et~al.(2008)Saltelli, Ratto, Andres, Campolongo, Cariboni, Gatelli, Saisana and Tarantola}]{saltelli2008}
+Saltelli, A., Ratto, M., Andres, T., Campolongo, F., Cariboni, J., Gatelli, D., Saisana, M., Tarantola, S., 2008. Global Sensitivity Analysis: The Primer. John Wiley \& Sons, Chichester.
+
+\bibitem[{Savage et~al.(2016)Savage, Bates, Freer, Neal and Aronica}]{savage2016}
+Savage, J.T.S., Bates, P., Freer, J., Neal, J., Aronica, G.T., 2016. When does spatial resolution become spurious in probabilistic flood inundation predictions? Hydrological Processes 30, 2014--2032. \url{https://doi.org/10.1002/hyp.10749}.
+
+\bibitem[{Sudheer et~al.(2019)Sudheer, Bhallamudi, Narasimhan, Thomas, Bindhu, Vema and Kurian}]{sudheer2019}
+Sudheer, K.P., Bhallamudi, S.M., Narasimhan, B., Thomas, J., Bindhu, V.M., Vema, V., Kurian, C., 2019. Role of dams on the floods of August 2018 in Periyar River Basin, Kerala. Current Science 116, 780--794. \url{https://doi.org/10.18520/cs/v116/i5/780-794}.
+
+\bibitem[{Teng et~al.(2017)Teng, Jakeman, Vaze, Croke, Dutta and Kim}]{teng2017}
+Teng, J., Jakeman, A.J., Vaze, J., Croke, B.F.W., Dutta, D., Kim, S., 2017. Flood inundation modelling: A review of methods, recent advances and uncertainty analysis. Environmental Modelling \& Software 90, 201--216. \url{https://doi.org/10.1016/j.envsoft.2017.01.006}.
+
+\bibitem[{Tolan et~al.(2024)}]{tolan2024}
+Tolan, J., Yang, E., Nosarzewski, B., Couairon, G., Vo, H.V., Brandt, J., Spore, J., Majumdar, S., Haziza, D., Vamaraju, J., Moutakanni, T., Bojanowski, P., Johns, T., White, B., Tiecke, T., Couprie, C., Saenz, E., 2024. Very high resolution canopy height maps from {RGB} imagery using self-supervised vision transformer and convolutional decoder trained on aerial lidar. Remote Sensing of Environment 300, 113888. \url{https://doi.org/10.1016/j.rse.2023.113888}.
+
+\bibitem[{Zanaga et~al.(2022)}]{zanaga2022}
+Zanaga, D., Van De Kerchove, R., Daems, D., De Keersmaecker, W., Brockmann, C., Kirches, G., Wevers, J., Cartus, O., Santoro, M., Fritz, S., Lesiv, M., Herold, M., Tsendbazar, N.E., Xu, P., Ramoino, F., Arino, O., 2022. {ESA} {WorldCover} 10 m 2021 v200. Zenodo. \url{https://doi.org/10.5281/zenodo.7254221}.
+
+\end{thebibliography}
+
+\end{document}
