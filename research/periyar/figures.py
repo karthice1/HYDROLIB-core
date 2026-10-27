@@ -3,15 +3,18 @@
 fig1: study area (terrain, channel, boundaries), the Sentinel-1 flood map, and the
 nominal model's flooded land at the radar pass.
 fig2: prior and conditioned ranges of peak flooded land from the ensembles.
+fig3: flooded land through time for the behavioural runs (from time_series.py).
 
 Usage:
     python -m research.periyar.figures MODEL_DIR SAR_TIF OUT_DIR --ensemble RUNS_DIR [RUNS_DIR ...]
+        [--time-series CSV]
 """
 
 import argparse
 from pathlib import Path
 
 import matplotlib
+import matplotlib.dates
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -23,7 +26,7 @@ import rasterio
 from hydrolib.core.dflowfm.polyfile.models import PolyFile
 
 from .validate import SAR_TIME, WET_DEPTH, _sample
-from .build_base_model import REFERENCE
+from .build_base_model import CHALAKUDY_DISCHARGE, DEFAULT_DISCHARGE, REFERENCE
 
 
 def _extent(profile):
@@ -117,6 +120,36 @@ def fig2(ensembles, out: Path) -> None:
     plt.close(fig)
 
 
+def fig3(time_series_csv: Path, out: Path, sar_km2: float = 22.0) -> None:
+    table = pd.read_csv(time_series_csv, index_col=0, parse_dates=True)
+    fig, ax = plt.subplots(figsize=(9, 4.2), constrained_layout=True)
+    for i, run in enumerate(table.columns):
+        ax.plot(table.index, table[run], color="tab:blue", lw=1.2, alpha=0.8,
+                label=f"behavioural runs (n={table.shape[1]})" if i == 0 else None)
+    sar_time = pd.Timestamp(SAR_TIME)
+    ax.axvline(sar_time, color="k", ls=":", lw=1)
+    ax.annotate("Sentinel-1 pass", (sar_time, ax.get_ylim()[1] * 0.95), ha="right",
+                fontsize=8, xytext=(-4, 0), textcoords="offset points")
+    ax.plot(sar_time, sar_km2, "kD", ms=6, label=f"radar open-water flooding ({sar_km2:.0f} km², lower bound)")
+    ax.set_ylabel("Flooded land (km²)")
+    ax.set_xlabel("Time (IST), August 2018")
+    q = ax.twinx()
+    for csv, name, style in [(DEFAULT_DISCHARGE, "Neeleswaram", "-"), (CHALAKUDY_DISCHARGE, "Arangaly (Chalakudy)", "--")]:
+        obs = pd.read_csv(csv, parse_dates=["datetime_ist"])
+        obs = obs[obs["datetime_ist"].between(table.index[0], table.index[-1])]
+        q.plot(obs["datetime_ist"], obs["discharge_m3s"], color="0.5", ls=style, lw=1, label=f"{name} discharge (CWC)")
+    q.set_ylabel("Observed discharge (m³/s)", color="0.4")
+    q.set_ylim(bottom=0)
+    handles = ax.get_legend_handles_labels()
+    more = q.get_legend_handles_labels()
+    ax.legend(handles[0] + more[0], handles[1] + more[1], fontsize=8, loc="upper left")
+    ax.set_xlim(table.index[0], table.index[-1])
+    ax.set_ylim(bottom=0)
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%d %b"))
+    fig.savefig(out, dpi=200)
+    plt.close(fig)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("model_dir", type=Path)
@@ -125,11 +158,14 @@ def main():
     parser.add_argument("--ensemble", type=Path, nargs="+", default=[],
                         help="Latin hypercube run directories (Morris samples are not random)")
     parser.add_argument("--label", default="", help="Model version shown in panel (c)")
+    parser.add_argument("--time-series", type=Path, help="Output CSV of time_series.py")
     args = parser.parse_args()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     fig1(args.model_dir, args.sar_file, args.out_dir / "fig1_study_area_validation.png", args.label)
     if args.ensemble:
         fig2(args.ensemble, args.out_dir / "fig2_conditioning.png")
+    if args.time_series:
+        fig3(args.time_series, args.out_dir / "fig3_flooded_land_time_series.png")
 
 
 if __name__ == "__main__":
