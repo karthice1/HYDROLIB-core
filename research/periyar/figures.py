@@ -193,7 +193,7 @@ def fig_confusion(states, out: Path, sar_file: Path) -> None:
     ax0.text(x0 + 5, y0 + 1, "10 km", ha="center", fontsize=13)
     fig.legend(handles=[Patch(color=colours[i], label=l) for i, l in
                         [(3, "flooded in both"), (1, "model only"), (2, "radar only"), (0, "dry in both")]],
-               loc="lower center", ncol=4, fontsize=13, bbox_to_anchor=(0.5, -0.06))
+               loc="lower center", ncol=4, fontsize=13, bbox_to_anchor=(0.5, -0.12))
     fig.savefig(out, dpi=300, bbox_inches="tight")
     plt.close(fig)
 
