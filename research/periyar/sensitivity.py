@@ -141,6 +141,7 @@ def metrics(map_file: Path, model_dir: Path = None, sar_file: Path = None) -> di
             "neeleswaram_peak_level_m", "hfl_error_m", "model_flooded_km2",
             "all_critical_success_index", "open_critical_success_index", "open_hit_rate",
             "open_false_alarm_ratio")})
+        values.update({key: val for key, val in v.items() if key.startswith("hfl_err_")})
     return values
 
 
@@ -172,6 +173,9 @@ def main():
     parser.add_argument("--release-model", choices=["additive", "multiplicative"],
                         default="additive", help="How the release multipliers enter the inflow")
     parser.add_argument("--keep-maps", action="store_true", help="Keep the map files")
+    parser.add_argument("--lags", type=float, nargs=2, metavar=("IDUKKI", "IDAMALAYAR"),
+                        help="Release travel times to Neeleswaram in hours "
+                        f"(default {IDUKKI_LAG_HOURS:g} and {IDAMALAYAR_LAG_HOURS:g})")
     parser.add_argument("--trajectories", type=int, default=4, help="Morris trajectories")
     parser.add_argument("--base-samples", type=int, default=64, help="Sobol base samples")
     parser.add_argument("--samples", type=int, default=100, help="Latin hypercube runs")
@@ -183,6 +187,8 @@ def main():
     parser.add_argument("--dflowfm", default="dflowfm", help="D-Flow FM executable or wrapper")
     parser.add_argument("--sar", type=Path, help="Sentinel-1 flood map; adds validation scores")
     args = parser.parse_args()
+    if args.lags:
+        globals().update(IDUKKI_LAG_HOURS=args.lags[0], IDAMALAYAR_LAG_HOURS=args.lags[1])
 
     varied = [f for f in FACTORS if not args.factors or f.name in args.factors]
     if args.method == "morris":

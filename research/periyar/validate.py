@@ -83,14 +83,35 @@ def scores(model_dir: Path, map_file: Path, sar_file: Path, sar_time: str = SAR_
 
     to_utm = Transformer.from_crs("EPSG:4326", CRS, always_xy=True)
     ux, uy = to_utm.transform(*np.mean(UPSTREAM, axis=0))
-    gauge = channel & (np.hypot(x - ux, y - uy) < GAUGE_RADIUS)
+    distance = np.hypot(x - ux, y - uy)
+    gauge = channel & (distance < GAUGE_RADIUS)
     peak = np.ma.median(level[:, gauge], axis=1)
     result.update({
         "neeleswaram_peak_level_m": float(peak.max()),
         "neeleswaram_peak_hour": float(hours[int(peak.argmax())]),
         "hfl_error_m": float(peak.max() - HFL_NEELESWARAM),
     })
+    result.update({f"hfl_err_{k}": v - HFL_NEELESWARAM
+                   for k, v in alternative_gauge_levels(level, channel, distance).items()})
     return result
+
+
+def alternative_gauge_levels(level, channel, distance) -> dict:
+    """Peak gauge level under other observation operators, to test the HFL comparison.
+
+    nearest: the single channel cell nearest the gauge; rR_median: highest hourly
+    median over channel cells within R m; r500_max / r500_min: the highest and the
+    lowest single-cell peak within 500 m.
+    """
+    out = {}
+    cells = np.flatnonzero(channel)
+    out["nearest"] = float(level[:, cells[np.argmin(distance[cells])]].max())
+    for radius in (300, 750, 1000):
+        m = channel & (distance < radius)
+        out[f"r{radius}_median"] = float(np.ma.median(level[:, m], axis=1).max()) if m.any() else np.nan
+    peaks = level[:, channel & (distance < GAUGE_RADIUS)].max(axis=0)
+    out["r500_max"], out["r500_min"] = float(peaks.max()), float(peaks.min())
+    return out
 
 
 def main():

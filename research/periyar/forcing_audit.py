@@ -37,6 +37,24 @@ def volume_mcm(t_hours, q):
     return float(np.trapezoid(q, t_hours * 3600.0) / 1e6)
 
 
+def lag_table(t, q, lags=((4.0, 2.0), (8.0, 4.0), (12.0, 6.0))) -> pd.DataFrame:
+    """Upstream inflow under other release travel times. The lag acts only on the
+    correction (m - 1) R(t - lag), so at m = 1 it has no effect at all."""
+    def inflow(lag, m):
+        (ti, ri), (ta, ra) = _release_hours(lag)
+        return q + (m - 1) * (np.interp(t, ti, ri) + np.interp(t, ta, ra))
+    rows = []
+    for m in (0.8, 1.2):
+        reference = inflow((IDUKKI_LAG_HOURS, IDAMALAYAR_LAG_HOURS), m)
+        for lag in lags:
+            flow = inflow(lag, m)
+            rows.append({"idukki_lag_h": lag[0], "idamalayar_lag_h": lag[1], "release_multiplier": m,
+                         "peak_m3s": float(flow.max()), "peak_hour": float(t[flow.argmax()]),
+                         "volume_mcm": volume_mcm(t, flow),
+                         "max_abs_difference_m3s": float(np.abs(flow - reference).max())})
+    return pd.DataFrame(rows)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("base_dir", type=Path)
@@ -80,6 +98,7 @@ def main():
         "max_difference_between_models_m3s": float(np.max(np.abs(
             0.15 * 0.2 * (r_idk + r_ida)))),
     }
+    lag_table(t, q).to_csv(args.out_dir / "lag_audit.csv", index=False)
     pd.Series(summary).to_csv(args.out_dir / "summary.csv", header=["value"])
     print(pd.Series(summary).round(3).to_string())
     print(table.round(3).to_string(index=False))

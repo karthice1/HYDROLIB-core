@@ -124,6 +124,22 @@ def main():
     falling = (level[before] - level[step]) > 0.1
     classes = np.where(trapped, "closed depression",
                        np.where(falling, "draining", "connected, slow"))
+    # Sensitivity of the classes to their two thresholds, with and without the
+    # cells next to a channel cell.
+    scan = []
+    for depth_min in (0.05, 0.1, 0.2, 0.5):
+        for fall_min in (0.05, 0.1, 0.2):
+            closed = wet & (level[step] <= spill + 0.01) & (spill - bed_face > depth_min)
+            drain = wet & ~closed & ((level[before] - level[step]) > fall_min)
+            for label, keep in (("all", wet), ("excluding next to channel", wet & ~next_to_channel)):
+                scan.append({"depression_depth_min_m": depth_min, "level_fall_min_m": fall_min,
+                             "cells": label,
+                             "closed_km2": area[closed & keep].sum() / 1e6,
+                             "draining_km2": area[drain & keep].sum() / 1e6,
+                             "slow_km2": area[keep & ~closed & ~drain].sum() / 1e6,
+                             "closed_stored_mcm": (depth[step] * area)[closed & keep].sum() / 1e6})
+    pd.DataFrame(scan).to_csv(args.out_dir / "drainage_thresholds.csv", index=False)
+
     rows = []
     for name in ("closed depression", "draining", "connected, slow"):
         m = wet & (classes == name)
