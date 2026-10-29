@@ -38,11 +38,13 @@ python -m research.periyar.sensitivity MODEL_DIR RUNS_MORRIS --method morris --t
 python -m research.periyar.analyse_runs RUNS_MORRIS
 
 # Conditioning ensembles over the five leading factors (200 runs, seed 42; 400 runs, seed 43)
+# (the 400-run ensemble uses --samples 400 --seed 43)
 python -m research.periyar.sensitivity MODEL_DIR RUNS_LHS --method lhs --samples 200 --seed 42 \
     --factors n_floodplain channel_depth canopy_factor q_rating q_idukki \
     --parallel 4 --threads 1 --dflowfm DFLOWFM --sar SAR.tif
 python -m research.periyar.analyse_runs RUNS_LHS --no-indices
 python -m research.periyar.uncertainty OUT_DIR RUNS_LHS [RUNS_LHS2 ...]
+python -m research.periyar.range_stability OUT_DIR/range_stability.csv OUT_DIR/runs.csv
 
 # Behavioural runs again: flooded land per hour, confusion matrices, cell states
 python -m research.periyar.time_series MODEL_DIR RUNS_LHS OUT.csv --dflowfm DFLOWFM --sar SAR.tif
@@ -54,7 +56,8 @@ python -m research.periyar.structural DATA_DIR SAR.tif OUT_DIR --dflowfm DFLOWFM
 python -m research.periyar.radar_check OUT.csv --states NAME=radar_state.npz ... --sar NAME=map.tif ...
 
 # Figures
-python -m research.periyar.figures MODEL_DIR SAR.tif FIG_DIR --ensemble RUNS_LHS --time-series OUT.csv
+python -m research.periyar.figures MODEL_DIR SAR.tif FIG_DIR --ensemble RUNS_LHS [RUNS_LHS2 ...] --time-series OUT.csv \
+    --uncertainty OUT_DIR
 ```
 
 The digitised CWC series are in `data/`; per-run results of every ensemble and the
