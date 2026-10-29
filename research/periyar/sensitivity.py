@@ -81,7 +81,15 @@ def _rewrite_rasters(run_dir: Path, base_dir: Path, row: pd.Series) -> None:
             dst.write(np.where(valid, array, profile["nodata"]).astype("float32"), 1)
 
 
-def _rewrite_forcing(run_dir: Path, row: pd.Series) -> None:
+def _rewrite_forcing(run_dir: Path, row: pd.Series, release_model: str = "additive") -> None:
+    """Perturb the Neeleswaram inflow and the sea level.
+
+    The Neeleswaram hydrograph Q(t) already contains the dam releases, so the release
+    multipliers m only add or remove the share (m - 1) of each lagged release:
+    "additive":       q_rating * Q(t) + sum (m - 1) R(t - lag)
+    "multiplicative": q_rating * [Q(t) + sum (m - 1) R(t - lag)]
+    At m = 1 no water is added in either form.
+    """
     model = ForcingModel(run_dir / "boundaries.bc")
     (t_idk, q_idk), (t_ida, q_ida) = _release_hours((IDUKKI_LAG_HOURS, IDAMALAYAR_LAG_HOURS))
     for forcing in model.forcing:
@@ -90,17 +98,20 @@ def _rewrite_forcing(run_dir: Path, row: pd.Series) -> None:
                 t = record[0]
                 extra = (row["q_idukki"] - 1) * np.interp(t, t_idk, q_idk) \
                     + (row["q_idamalayar"] - 1) * np.interp(t, t_ida, q_ida)
-                record[1] = max(record[1] * row["q_rating"] + extra, 0.0)
+                if release_model == "multiplicative":
+                    record[1] = max((record[1] + extra) * row["q_rating"], 0.0)
+                else:
+                    record[1] = max(record[1] * row["q_rating"] + extra, 0.0)
     perturb.offset_waterlevel(model, row["tide_offset"])
     model.save()
 
 
-def prepare(base_dir: Path, run_dir: Path, row: pd.Series) -> None:
+def prepare(base_dir: Path, run_dir: Path, row: pd.Series, release_model: str = "additive") -> None:
     if run_dir.exists():
         shutil.rmtree(run_dir)
     shutil.copytree(base_dir, run_dir, ignore=shutil.ignore_patterns("DFM_OUTPUT_*", "*.log"))
     _rewrite_rasters(run_dir, base_dir, row)
-    _rewrite_forcing(run_dir, row)
+    _rewrite_forcing(run_dir, row, release_model)
 
 
 def metrics(map_file: Path, model_dir: Path = None, sar_file: Path = None) -> dict:
@@ -134,8 +145,8 @@ def metrics(map_file: Path, model_dir: Path = None, sar_file: Path = None) -> di
 
 
 def run_one(dflowfm: str, base_dir: Path, run_dir: Path, row: pd.Series, threads: int,
-            sar_file: Path = None) -> dict:
-    prepare(base_dir, run_dir, row)
+            sar_file: Path = None, release_model: str = "additive", keep_map: bool = False) -> dict:
+    prepare(base_dir, run_dir, row, release_model)
     log = run_dir / "run.log"
     env = {"OMP_NUM_THREADS": str(threads)}
     with log.open("w") as out:
@@ -146,7 +157,8 @@ def run_one(dflowfm: str, base_dir: Path, run_dir: Path, row: pd.Series, threads
     if result.returncode != 0 or not map_file.exists():
         return {"status": "failed"}
     values = metrics(map_file, run_dir, sar_file)
-    map_file.unlink()  # keep the disk free; scalar metrics are all the GSA needs
+    if not keep_map:
+        map_file.unlink()  # keep the disk free; scalar metrics are all the GSA needs
     return {"status": "ok", **values}
 
 
@@ -154,25 +166,40 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("base_dir", type=Path)
     parser.add_argument("runs_dir", type=Path)
-    parser.add_argument("--method", choices=["morris", "sobol", "lhs"], default="morris")
+    parser.add_argument("--method", choices=["morris", "sobol", "lhs", "file"], default="morris")
+    parser.add_argument("--samples-file", type=Path, help="Sample table for --method file; "
+                        "missing factors are held at NOMINAL")
+    parser.add_argument("--release-model", choices=["additive", "multiplicative"],
+                        default="additive", help="How the release multipliers enter the inflow")
+    parser.add_argument("--keep-maps", action="store_true", help="Keep the map files")
     parser.add_argument("--trajectories", type=int, default=4, help="Morris trajectories")
     parser.add_argument("--base-samples", type=int, default=64, help="Sobol base samples")
     parser.add_argument("--samples", type=int, default=100, help="Latin hypercube runs")
     parser.add_argument("--seed", type=int, default=42, help="Latin hypercube seed")
-    parser.add_argument("--factors", nargs="+", help="Vary only these factors (lhs); the "
-                        "others are held at NOMINAL")
+    parser.add_argument("--factors", nargs="+", help="Vary only these factors (lhs, morris); "
+                        "the others are held at NOMINAL")
     parser.add_argument("--parallel", type=int, default=2, help="Simultaneous runs")
     parser.add_argument("--threads", type=int, default=2, help="OpenMP threads per run")
     parser.add_argument("--dflowfm", default="dflowfm", help="D-Flow FM executable or wrapper")
     parser.add_argument("--sar", type=Path, help="Sentinel-1 flood map; adds validation scores")
     args = parser.parse_args()
 
+    varied = [f for f in FACTORS if not args.factors or f.name in args.factors]
     if args.method == "morris":
-        samples = sampling.morris(FACTORS, trajectories=args.trajectories)
+        samples = sampling.morris(varied, trajectories=args.trajectories)
+        for name, value in NOMINAL.items():
+            if name not in samples:
+                samples[name] = value
+        samples = samples[[f.name for f in FACTORS]]
     elif args.method == "sobol":
         samples = sampling.sobol(FACTORS, base_samples=args.base_samples)
+    elif args.method == "file":
+        samples = pd.read_csv(args.samples_file, index_col=0)
+        for name, value in NOMINAL.items():
+            if name not in samples:
+                samples[name] = value
+        samples = samples[[f.name for f in FACTORS]]
     else:
-        varied = [f for f in FACTORS if not args.factors or f.name in args.factors]
         samples = sampling.latin_hypercube(varied, samples=args.samples, seed=args.seed)
         for name, value in NOMINAL.items():
             if name not in samples:
@@ -188,7 +215,8 @@ def main():
         if run in done.index and done.loc[run, "status"] == "ok":
             return run, done.loc[run].to_dict()
         out = run_one(args.dflowfm, args.base_dir, args.runs_dir / f"run_{run:04d}",
-                      samples.loc[run], args.threads, args.sar)
+                      samples.loc[run], args.threads, args.sar, args.release_model,
+                      args.keep_maps)
         print(f"run {run}: {out}", flush=True)
         return run, out
 
@@ -204,13 +232,13 @@ def main():
     if not ok.all():
         print(f"{(~ok).sum()} runs failed; indices are computed only when all runs succeed.")
         return
-    if args.method == "lhs":
+    if args.method in ("lhs", "file"):
         return  # conditioned on the observations by analyse_runs.py, no indices
     report = []
     for metric in [c for c in results.columns if c != "status"]:
         y = results[metric].astype(float)
         if args.method == "morris":
-            table = analysis.morris(FACTORS, samples, y)
+            table = analysis.morris(varied, samples[[f.name for f in varied]], y)
         else:
             table = analysis.sobol(FACTORS, y)
         table.insert(0, "metric", metric)

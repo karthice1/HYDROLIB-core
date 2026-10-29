@@ -59,6 +59,17 @@
       "narrowing_5_95": 0.35497929610205836
     }
   },
+  "lower_bound_test": {
+    "18.0": 23,
+    "22.0": 23,
+    "26.0": 23
+  },
+  "min_model_flooded_at_pass_km2": 77.36,
+  "correlation_with_peak_area": {
+    "open_hit_rate": 0.9020785656102283,
+    "open_critical_success_index": -0.9344457001374457,
+    "all_critical_success_index": -0.9667010755012247
+  },
   "hfl_residuals": {
     "prior": {
       "q05": -1.4489687862126521,

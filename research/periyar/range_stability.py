@@ -21,9 +21,9 @@ LHS_FACTORS = ["n_floodplain", "channel_depth", "canopy_factor", "q_rating", "q_
 TRIM = 0.2
 
 
-def summary(label, runs):
+def summary(label, runs, tol):
     prior = runs[OUTPUT].to_numpy()
-    post = runs.loc[accepted(runs), OUTPUT].to_numpy()
+    post = runs.loc[accepted(runs, hfl_tol=tol), OUTPUT].to_numpy()
     lo, hi = pd.Series(prior).quantile([0.05, 0.95])
     return {"case": label, "n_runs": len(runs), "prior_q05": lo, "prior_q95": hi,
             **{f"accepted_{k}": v for k, v in narrowing(prior, post).items()}}
@@ -33,16 +33,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("out_csv", type=Path)
     parser.add_argument("runs_csv", type=Path)
+    parser.add_argument("--hfl-tolerance", type=float, default=0.5)
     args = parser.parse_args()
+    tol = args.hfl_tolerance
     runs = pd.read_csv(args.runs_csv)
     runs = runs[runs["status"] == "ok"]
     bounds = {f.name: (f.lower, f.upper) for f in FACTORS}
-    rows = [summary("full ranges", runs)]
+    rows = [summary("full ranges", runs, tol)]
     for name in LHS_FACTORS:
         lo, hi = bounds[name]
         cut = TRIM * (hi - lo)
-        rows.append(summary(f"{name} without lowest fifth", runs[runs[name] >= lo + cut]))
-        rows.append(summary(f"{name} without highest fifth", runs[runs[name] <= hi - cut]))
+        rows.append(summary(f"{name} without lowest fifth", runs[runs[name] >= lo + cut], tol))
+        rows.append(summary(f"{name} without highest fifth", runs[runs[name] <= hi - cut], tol))
     table = pd.DataFrame(rows)
     table.to_csv(args.out_csv, index=False)
     print(table[["case", "n_runs", "prior_q05", "prior_q95", "accepted_n", "accepted_low",
