@@ -55,13 +55,21 @@ python -m research.periyar.structural DATA_DIR SAR.tif OUT_DIR --dflowfm DFLOWFM
 # Scores against radar maps made with other thresholds
 python -m research.periyar.radar_check OUT.csv --states NAME=radar_state.npz ... --sar NAME=map.tif ...
 
+# Second-round tests (results/revision2): forcing audit, drainage diagnosis, supplementary ensembles
+python -m research.periyar.forcing_audit MODEL_DIR OUT_DIR
+python -m research.periyar.drainage RUN_DIR SAR.tif OUT_DIR [--fill-from BASE --dflowfm DFLOWFM]
+python -m research.periyar.drainage --terrain-scan BASE OUT.csv
+# Supplementary ensembles: see results/revision2/supplementary/chain_rev[234].sh for the exact
+# commands (release form, fixed factors, eight-factor LHS, six-factor Morris, travel times, repeats);
+# results/revision2/supplementary/compare_reruns.py compares the reruns with their originals.
+
 # Figures
 python -m research.periyar.figures MODEL_DIR SAR.tif FIG_DIR --ensemble RUNS_LHS [RUNS_LHS2 ...] --time-series OUT.csv \
     --uncertainty OUT_DIR
 ```
 
 The digitised CWC series are in `data/`; per-run results of every ensemble and the
-revision tests are in `results/` (`results/revision` for the tests added after review).
+revision tests are in `results/` (`results/revision` and `results/revision2` for the tests added after the first and second reviews).
 Map files are deleted after each run is scored, so the per-run CSV and JSON files and
 the `radar_state.npz` cell states are the stored outputs.
 
