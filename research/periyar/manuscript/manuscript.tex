@@ -193,7 +193,7 @@ Four revisions brought the nominal model from a 10~m level error to about 2~m (T
 
 \begin{table}[htbp]
 \centering
-\caption{Model revisions and their nominal scores against the two observations. Scores of different versions are not strictly comparable: v1 was scored at a different cell and v1--v2 at an earlier hour (footnote).}
+\caption{Model revisions and their nominal scores against the two observations. Scores of different versions are not strictly comparable: v1 was scored at a different cell and v1--v2 at an earlier hour (footnote). Each version changed several things at once, so the table is a record of model development, not a controlled experiment.}
 \label{tab:versions}
 \small
 \begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedleft\arraybackslash}p{2.2cm}>{\raggedleft\arraybackslash}p{3.2cm}@{}}
@@ -253,7 +253,7 @@ All 600 Latin hypercube runs completed. The prior peak flooded land spans 89--36
 
 \begin{table}[htbp]
 \centering
-\caption{Intervals of peak flooded land (\kmsq) behind the conditional ensemble-range contraction $C$ (Eq.~\ref{eq:contraction}), for each test alone and both together. The prior range is 88.8--363.6~\kmsq{} and the prior 5--95\% interval 107.3--329.2~\kmsq{} in every row. Like-for-like: prior central interval with coverage $(n-1)/(n+1)$.}
+\caption{Intervals of peak flooded land (\kmsq) behind the conditional ensemble-range contraction $C$ (Eq.~\ref{eq:contraction}), for each test alone and both together. The prior range is 88.8--363.6~\kmsq{} and the prior 5--95\% interval 107.3--329.2~\kmsq{} in every row. Like-for-like: prior central interval with coverage $(n-1)/(n+1)$. The $\pm$1.5~m rows are the structural-error case (Section~\ref{sec:validation}).}
 \label{tab:intervals}
 \footnotesize
 \resizebox{\textwidth}{!}{%
@@ -268,6 +268,9 @@ $\pm$1.0 m & HFL only & 131 & 91.7--353.7 & 110.5--243.4 & 124.2--212.2 & 0.49 &
 $\pm$0.5 m & HFL only & 55 & 97.7--349.0 & 113.9--198.2 & 131.9--179.4 & 0.66 & 0.62 \\
  & Radar only & 492 & 89.1--360.6 & 145.8--363.6 & 162.5--334.2 & 0.20 & 0.02 \\
  & Both & 23 & 105.3--334.2 & 145.8--198.2 & 152.3--181.7 & \textbf{0.77} & 0.76 \\
+\midrule
+$\pm$1.5 m & HFL only & 217 & 90.2--357.3 & 102.3--268.9 & 118.9--233.2 & 0.38 & 0.25 \\
+(structural) & Both & 139 & 91.2--353.8 & 145.8--268.9 & 157.4--240.1 & 0.53 & 0.45 \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -334,7 +337,7 @@ Passing the radar test does not mean the model reproduces the flood pattern. Tab
 
 \begin{table}[htbp]
 \centering
-\caption{Contingency table against the Sentinel-1 map at the radar pass (200~m cells, fraction cut-off 0.5). Counts are cells; land means cells dry at the start with valid radar coverage, open land the WorldCover open classes within it. Last two rows: range over the 73 runs accepted at $\pm$1.0~m (scores only).}
+\caption{Contingency table against the Sentinel-1 map at the radar pass (200~m cells, fraction cut-off 0.5). Counts are cells; land means cells dry at the start with valid radar coverage, open land the WorldCover open classes within it. The nominal run and the median accepted run are different parameter sets and are reported in separate blocks. Last two rows: range over the 73 runs accepted at $\pm$1.0~m (scores only).}
 \label{tab:confusion}
 \footnotesize
 \resizebox{\textwidth}{!}{%
@@ -344,8 +347,10 @@ Run & Domain & Hits & Misses & False al. & Corr. neg. & Hit rate & FAR & CSI & B
 \midrule
 Nominal & all land & 278 & 272 & 4,216 & 17,122 & 0.51 & 0.94 & 0.058 & 8.2 \\
 Nominal & open land & 85 & 10 & 993 & 872 & 0.89 & 0.92 & 0.078 & 11.3 \\
+\midrule
 Median accepted & all land & 241 & 310 & 2,958 & 18,512 & 0.44 & 0.93 & 0.069 & 5.8 \\
 Median accepted & open land & 74 & 21 & 695 & 1,175 & 0.78 & 0.90 & 0.094 & 8.1 \\
+\midrule
 Bare-earth proxy & all land & 340 & 200 & 5,789 & 21,407 & 0.63 & 0.94 & 0.054 & 11.3 \\
 73 accepted runs & all land & -- & -- & -- & -- & -- & -- & 0.059--0.076 & -- \\
 73 accepted runs & open land & -- & -- & -- & -- & 0.76--0.88 & 0.90--0.92 & 0.080--0.098 & -- \\
