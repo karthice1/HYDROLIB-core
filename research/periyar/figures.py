@@ -47,6 +47,12 @@ def _polyline(path):
     return np.array([p.x for p in pts]) / 1e3, np.array([p.y for p in pts]) / 1e3
 
 
+# Contingency colours shared by Fig. 1c and the cell-by-cell comparison (fig_confusion).
+HIT, FALSE_ALARM, MISS, DRY = "#1b7837", "#e66101", "#5e3c99", "#d9d9d9"
+CONTINGENCY_LABELS = {HIT: "hit: flooded in model and radar", FALSE_ALARM: "false alarm: model only",
+                      MISS: "miss: radar only", DRY: "dry in both"}
+
+
 def fig1(model_dir: Path, sar_file: Path, out: Path, label: str = "") -> None:
     with rasterio.open(model_dir / "dem_model.tif") as src:
         dem, profile = src.read(1), src.profile
@@ -87,12 +93,12 @@ def fig1(model_dir: Path, sar_file: Path, out: Path, label: str = "") -> None:
     ax = axes[2]
     ax.imshow(np.ma.masked_less(dem, -100), extent=extent, cmap="Greys", vmin=-5, vmax=60, alpha=0.6)
     observed = _sample(sar_file, x, y, -1.0) > 0.5
-    for mask, colour, kind in ((land_wet & ~observed, "tab:orange", "model only"),
-                                (land_wet & observed, "tab:green", "both"),
-                                (~land_wet & observed & (depth0 <= WET_DEPTH), "tab:blue", "radar only")):
+    for mask, colour, kind in ((land_wet & ~observed, FALSE_ALARM, CONTINGENCY_LABELS[FALSE_ALARM]),
+                                (land_wet & observed, HIT, CONTINGENCY_LABELS[HIT]),
+                                (~land_wet & observed & (depth0 <= WET_DEPTH), MISS, CONTINGENCY_LABELS[MISS])):
         ax.scatter(x[mask] / 1e3, y[mask] / 1e3, s=1.5, c=colour, marker="s", label=kind,
                    linewidths=0)
-    ax.legend(loc="lower right", fontsize=12, markerscale=6)
+    ax.legend(loc="lower right", fontsize=10, markerscale=6)
     ax.set_title(f"(c) Nominal{label} at the pass")
     for ax in axes:
         ax.set_xlabel("Easting (km)")
@@ -171,7 +177,7 @@ def fig_confusion(states, out: Path, sar_file: Path) -> None:
     from .validate import _sample
     fig, axes = plt.subplots(1, len(states), figsize=(4.6 * len(states), 5.4),
                              constrained_layout=True, sharex=True, sharey=True)
-    colours = ["#d9d9d9", "#e66101", "#5e3c99", "#1b7837"]  # dry in both, model only, radar only, both
+    colours = [DRY, FALSE_ALARM, MISS, HIT]
     for ax, (title, npz) in zip(np.atleast_1d(axes), states.items()):
         s = np.load(npz)
         fraction = _sample(sar_file, s["x"], s["y"], -1.0)
@@ -191,9 +197,10 @@ def fig_confusion(states, out: Path, sar_file: Path) -> None:
     x0, y0 = ax0.get_xlim()[0] + 2, ax0.get_ylim()[0] + 2
     ax0.plot([x0, x0 + 10], [y0, y0], "k-", lw=3)
     ax0.text(x0 + 5, y0 + 1, "10 km", ha="center", fontsize=13)
-    fig.legend(handles=[Patch(color=colours[i], label=l) for i, l in
-                        [(3, "flooded in both"), (1, "model only"), (2, "radar only"), (0, "dry in both")]],
-               loc="lower center", ncol=4, fontsize=13, bbox_to_anchor=(0.5, -0.12))
+    fig.legend(handles=[Patch(facecolor=c, edgecolor="0.3", label=CONTINGENCY_LABELS[c])
+                        for c in (HIT, FALSE_ALARM, MISS, DRY)],
+               loc="lower center", ncol=2, fontsize=15, handlelength=2.5, handleheight=1.4,
+               frameon=False, bbox_to_anchor=(0.5, -0.2))
     fig.savefig(out, dpi=300, bbox_inches="tight")
     plt.close(fig)
 
