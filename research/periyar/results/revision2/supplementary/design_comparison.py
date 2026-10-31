@@ -1,5 +1,7 @@
+"""Pooled five-factor designs separately, +-2.0 m case and 200-run subsets of the pool."""
 import pandas as pd, numpy as np
-R='/home/user/hydrolib-core/research/periyar/results/'
+from pathlib import Path
+R=str(Path(__file__).resolve().parents[2])+'/'
 d200=pd.read_csv(R+'v5_lhs200/results.csv').merge(pd.read_csv(R+'v5_lhs200/samples.csv'),on='run')
 d400=pd.read_csv(R+'v5_lhs400/results.csv').merge(pd.read_csv(R+'v5_lhs400/samples.csv'),on='run')
 m=pd.read_csv(R+'revision2/uncertainty_600_tol0.5/runs.csv')

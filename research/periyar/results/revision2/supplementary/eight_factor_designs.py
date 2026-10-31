@@ -1,6 +1,9 @@
+"""Second eight-factor design (seed 46) alone and pooled with the first (seed 44)."""
 import pandas as pd, numpy as np
-exec(open('/home/user/ext/ms/an/round4.py').read().split("print('--- subsample")[0].split("for name,r in [('lhs200")[0])
-b=pd.read_csv('/home/user/ext/rev2/lhs8b/results.csv').merge(pd.read_csv('/home/user/ext/rev2/lhs8b/samples.csv'),on='run')
+from pathlib import Path
+HERE = Path(__file__).parent
+exec(open(HERE / 'design_comparison.py').read().split("print('--- subsample")[0].split("for name,r in [('lhs200")[0])
+b=pd.read_csv(HERE / 'lhs8b' / 'results.csv').merge(pd.read_csv(HERE / 'lhs8b' / 'samples.csv'),on='run')
 both=pd.concat([l8,b],ignore_index=True)
 for name,r in [('lhs8 s46',b),('lhs8 pooled 400',both)]:
     a=r.max_flooded_area_km2
