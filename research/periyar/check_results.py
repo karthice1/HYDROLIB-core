@@ -76,14 +76,14 @@ def main():
         check(f"{name} accepted", n_exp, keep.sum(), 0)
         check(f"{name} C", c_exp, contraction(runs, keep), 0.005)
 
-    print("\nTable 10: eight-factor ensemble (seed 44)")
+    print("\nTable 11: eight-factor ensemble (seed 44)")
     lhs8 = pd.read_csv(REV2 / "lhs8_tol1.0" / "runs.csv")
     for tol, n_exp, c_exp in [(1.0, 22, 0.73), (1.5, 47, 0.54), (2.0, 73, 0.33)]:
         keep = accepted(lhs8, tol)
         check(f"accepted at +-{tol} m", n_exp, keep.sum(), 0)
         check(f"C at +-{tol} m", c_exp, contraction(lhs8, keep), 0.005)
 
-    print("\nTable 10: fixed factors and forcing reruns of the 23 strict runs")
+    print("\nTables 10 and 11: fixed factors and forcing reruns of the 23 strict runs")
     fixed = pd.read_csv(SUPP / "fixed" / "results.csv")
     check("fixed factors accepted at +-1.0 m", 57, accepted(fixed, 1.0).sum(), 0)
     check("fixed factors accepted at +-0.5 m", 30, accepted(fixed, 0.5).sum(), 0)

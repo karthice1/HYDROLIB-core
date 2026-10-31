@@ -36,7 +36,7 @@ set with the same build reproduces its results to the last digit.
 python -m research.periyar.check_results
 ```
 
-This recomputes the principal numbers of Tables 4, 5, 7 and 10 and Section 4.6 from the
+This recomputes the principal numbers of Tables 4, 5, 7, 10 and 11 and Section 4.6 from the
 per-run results stored in `results/`. Each check prints PASS or FAIL. The exit code is the
 number of failures, so it can run in CI.
 
