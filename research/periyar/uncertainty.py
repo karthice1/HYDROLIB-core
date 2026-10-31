@@ -25,7 +25,7 @@ import pandas as pd
 
 SAR_KM2 = 22.0
 OUTPUT = "max_flooded_area_km2"
-HFL_TOLERANCES = [0.25, 0.5, 0.75, 1.0, 1.5]
+HFL_TOLERANCES = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
 HIT_RATES = [0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9]
 
 

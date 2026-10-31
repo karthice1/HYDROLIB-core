@@ -27,6 +27,10 @@ wrapper script that sets its library path.
 
 ## Reproducing the results
 
+`REPRODUCE.md` explains installation, which parts are reusable on other D-Flow FM domains,
+and how to check every principal number without running the model
+(`python -m research.periyar.check_results`). `requirements.txt` pins the Python packages.
+
 ```bash
 # Model v5 (200 m) and the radar flood map
 python -m research.periyar.build_base_model DATA_DIR MODEL_DIR --cell-size 200 --channel-depth 4
