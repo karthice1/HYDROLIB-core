@@ -1,0 +1,663 @@
+\documentclass[preprint,12pt,authoryear]{elsarticle}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage{lineno}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xurl}
+
+\newcommand{\kmsq}{km\textsuperscript{2}}
+\newcommand{\cumecs}{m\textsuperscript{3}\,s\textsuperscript{-1}}
+\newcommand{\Mcm}{million m\textsuperscript{3}}
+
+\journal{Environmental Modelling \& Software}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{How far can one gauge mark and one radar image narrow parameter uncertainty in an open-data flood model? Sensitivity analysis of the 2018 Periyar flood}
+
+\author[kahe]{Karthik V\corref{cor1}}
+\ead{karthik.vasanthakumar@kahedu.edu.in}
+\author[kahe]{Roopa D}
+\cortext[cor1]{Corresponding author.}
+\affiliation[kahe]{organization={Karpagam Academy of Higher Education},
+            city={Coimbatore},
+            state={Tamil Nadu},
+            country={India}}
+
+\begin{abstract}
+Flood models of data-scarce tropical basins rest on global data whose errors are rarely quantified together. We built an open-data two-dimensional D-Flow FM model of the lower Periyar River, Kerala, for the August 2018 flood with the HYDROLIB-core library. Validating the first model against the 12.4~m high-flood level (HFL) at Neeleswaram and a Sentinel-1 flood map exposed three structural errors and one missing tributary that Morris screening had missed. On the final model, 180 Morris runs rank channel depth, floodplain roughness and rating-curve error first for peak flooded land; sea level is negligible. A 600-run Latin hypercube over the five leading factors was conditioned on the HFL, with a $\pm$1.0~m tolerance set from an assumed datum and observation-error scenario, and on the radar map used as a lower bound. The 73 accepted runs give a peak flooded land of 146--243~\kmsq: a conditional ensemble-range contraction of 62\% against a prior interval of equal expected coverage, or 77\% at $\pm$0.5~m. The HFL does most of this; the radar test alone contracts the range by 20\%, only by rejecting dry runs. A 200-run ensemble varying all eight factors gives 73\%, so fixing three factors did not inflate the result. Reruns show that the release formulation, travel times and gauge operator matter less than the tolerance, but that the gauge level responds unevenly to small forcing changes. Spatial agreement with the radar is poor (critical success index at most 0.10). A drainage diagnosis attributes the excess post-peak flooding to closed depressions of the surface-model terrain and slowly draining low land; it remains an unresolved structural discrepancy. The contraction is conditional on the model structure, factor ranges and acceptance rule, is not a reduction of predictive error, and the model is not validated for operational use. What transfers is the workflow, not the numbers.
+\end{abstract}
+
+\begin{highlights}
+\item Validating an open-data HYDROLIB-core flood model exposed errors screening missed
+\item Channel depth, floodplain roughness and rating error lead on the final model
+\item HFL dominates a 62--73\% conditional range contraction; radar rejects dry runs
+\item A 1\% forcing change moved a few single runs by up to 0.76~m or 62~\kmsq
+\item DSM depressions hold water after the peak; radar spatial agreement stays poor
+\end{highlights}
+
+\begin{keyword}
+global sensitivity analysis \sep Morris method \sep flood inundation modelling \sep D-Flow FM \sep Sentinel-1 \sep Kerala 2018 flood
+\end{keyword}
+
+\end{frontmatter}
+
+\linenumbers
+
+\section{Introduction}
+\label{sec:intro}
+
+The floods and landslides of August 2018 in Kerala took 433 lives \citep{pdna2018}. At Neeleswaram the Periyar peaked at about 8,800~\cumecs{} on 16 August and reached EL~12.4~m, 1.3~m above the previous record of 1974 \citep{cwc2018}. Events of this kind are increasingly modelled in two dimensions with open global data: the Copernicus DEM \citep{esa2021}, ESA WorldCover \citep{zanaga2022}, the JRC Global Surface Water record \citep{pekel2016} and global canopy-height maps \citep{tolan2024} make a 2D model possible almost anywhere. Each of these data sets carries errors, however. A digital surface model (DSM) is not a terrain model, and a coarse water mask misses channel geometry.
+
+Global sensitivity analysis (GSA) is the standard way to find which of these uncertain inputs matter. Morris elementary effects \citep{morris1991}, summarised by the mean absolute effect $\mu^*$ \citep{campolongo2007}, screen many factors at low cost, within the broader framework of \citet{saltelli2008}. Conditioning on observations, as in GLUE \citep{beven1992}, then keeps only the parameter sets consistent with what was seen. Studies of 2D flood models usually assume a validated model and treat the observations separately. In data-scarce basins the model structure itself is uncertain, and few studies show how GSA and sparse observations interact, or report how validation changed the model before the GSA was run.
+
+This paper makes four contributions:
+\begin{enumerate}
+\item A reproducible open-data workflow in Python from global rasters to an ensemble of D-Flow FM runs, built on HYDROLIB-core, with a model-independent sensitivity layer that can be reused on other D-Flow FM domains, every model version, run and score archived, and an automatic check of the principal numbers (Section~\ref{sec:software}).
+\item Evidence that validation against two cheap observations exposed structural errors that GSA alone did not, and a check that the factor ranking survives the last structural change.
+\item A test of how far a single HFL mark and a single post-peak radar scene, under dense tree cover, can narrow the predicted flood area, with the narrowing quantified against ensemble size, acceptance rule, likelihood weighting, factor ranges, fixed factors, release formulation and observation operator.
+\item Structural tests (terrain, channel mask, grid, tide) and a full contingency analysis against the radar map that bound what the parameter ensemble can claim.
+\end{enumerate}
+
+\subsection{Related work}
+
+\paragraph{Uncertainty and sensitivity in flood inundation models}
+\citet{teng2017} review the main classes of inundation model and how their uncertainty is analysed. \citet{pianosi2016} give a systematic review of sensitivity analysis for environmental models with a practical workflow; we follow its separation of factor screening (here Morris) from the conditioning of predictions. \citet{hall2005} applied variance-based (Sobol') sensitivity analysis to a raster inundation model of a River Thames reach checked against a radar flood outline, and found that channel roughness dominated the predicted outline and depth; splitting the channel into subreaches showed where the variance came from. \citet{pappenberger2005} carried uncertainty from ensemble rainfall forecasts through a rainfall-runoff model into LISFLOOD-FP, weighting ten roughness sets by their likelihood. \citet{savage2016} showed that grids coarser than about 50~m change flow paths and shift the best-fitting parameters, and that probabilistic flood maps lose reliability beyond about 100~m. This bears directly on our 200~m grid.
+
+\paragraph{Conditioning on flood extent}
+GLUE \citep{beven1992} rejects parameter sets that fail an observation and keeps the rest as behavioural. \citet{aronica2002} applied it to an inundation model using binary wet/dry pattern information, and \citet{bates2004} updated flood inundation likelihoods with flood extent data in a Bayesian scheme. \citet{montanari2009} used water stages derived from radar flood extents to calibrate and sequentially update a coupled hydrologic-hydraulic model. These studies use extents over largely open floodplains. In the lower Periyar most of the floodplain is under tree cover, so the radar extent can only bound the model from below, and we test what that weaker information can still constrain.
+
+\paragraph{Terrain data}
+Global elevation models such as the Copernicus DEM are surface models that include trees and buildings. \citet{hawker2022} produced FABDEM, a 30~m version of the Copernicus DEM with forests and buildings removed. We instead remove a fraction of canopy height and treat that fraction as an uncertain factor, so its effect on the flood can be measured rather than fixed in preprocessing, and we test a bare-earth proxy as a structural alternative.
+
+\paragraph{The 2018 Kerala flood}
+\citet{mishra2018} placed the August 2018 event in its hydroclimatic context. \citet{sudheer2019} modelled the Periyar basin with HEC-HMS and found that the Idukki peak release (about 1,860~\cumecs) was smaller than the flow of the nearly uncontrolled Perinjankutty tributary (about 3,500~\cumecs). Reservoir operation lowered the Neeleswaram peak by about 17\% compared with a no-dam case, and earlier emptying of the reservoirs would have lowered it by a further 16--21\%, still well above the bankfull capacity of about 4,200~\cumecs. They estimated a return period of about 142 years for the Neeleswaram flood. These studies are hydrological. We found no two-dimensional inundation model of the lower Periyar for 2018 whose uncertainty has been analysed.
+
+\paragraph{What is new here}
+Screening followed by behavioural selection is established practice, and we use standard methods (Morris, Latin hypercube, GLUE-style acceptance). Earlier studies differ from ours in four ways. \citet{hall2005} and \citet{pappenberger2005} quantified parameter sensitivity or uncertainty of a model taken as structurally adequate, and \citet{aronica2002}, \citet{bates2004} and \citet{wood2016} conditioned models on radar extents over largely open floodplains, where the extent is a strong two-sided constraint; \citet{wood2016} showed that channel depth and friction trade off against each other when calibrated on such extents. \citet{stephens2012} and \citet{schumann2009} examined how uncertainty in the satellite data limits such tests. To our knowledge, these studies do not report how much of a range contraction each observation provides, and they do not use the observations first to revise the model structure. Our contribution lies in how the standard methods are ordered, reported and tested. First, the sparse observations are used to diagnose and revise the model structure before the GSA, and the screening is repeated on the final structure to show that the ranking is not an artefact of the revision. Second, the contraction of the predicted range is defined on a like-for-like basis, reported with every interval behind it and split into the contribution of each observation, so that a reader can see that the gauge mark, not the radar scene, does the work. Third, a radar scene taken five days after the peak over a mostly forested floodplain is used only as a one-sided lower bound, and we show quantitatively that the test favours wetter runs. Fourth, structural variants and a drainage diagnosis inside the model show where the parameter ensemble stops being informative, and why. Among the studies we reviewed we found none that combines these for an open-data model of a forested floodplain; this describes the literature we searched, not a claim of absolute novelty. The reusable part is computational: a model-independent sensitivity layer for D-Flow FM built on HYDROLIB-core, scripts that turn any ensemble into the intervals, contributions and contraction reported here, and a check that recomputes every principal number from the stored runs (Section~\ref{sec:software}).
+
+\section{Study area and data}
+\label{sec:data}
+
+The model covers the lower Periyar from near Neeleswaram (the CWC gauge-and-discharge site) to the Arabian Sea, from 76.15 to 76.55\textdegree E and 9.9 to 10.3\textdegree N (Fig.~\ref{fig:study}a). That includes the Munambam and Kochi inlets and the northern Vembanad backwater. The 2018 peak at Neeleswaram was about 8,800~\cumecs, with a high-flood level of EL~12.4~m \citep{cwc2018}. Table~\ref{tab:data} lists the data.
+
+\begin{table}[htbp]
+\centering
+\caption{Data used to build and test the model.}
+\label{tab:data}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{2.8cm}l@{}}
+\toprule
+Data & Source & Use & Resolution \\
+\midrule
+Terrain (DSM) & Copernicus DEM GLO-30 \citep{esa2021} & Bed level & 30 m \\
+Canopy height & Meta/WRI global canopy height \citep{tolan2024}; tiles averaged to the 200~m grid, values outside 0--100~m (nodata, 0.002\% of cells) set to zero & DSM correction & 1 m \\
+Land cover & ESA WorldCover 2021 \citep{zanaga2022} & Manning $n$ per class & 10 m \\
+Permanent water & JRC Global Surface Water occurrence \citep{pekel2016} & Channel mask & 30 m \\
+Neeleswaram discharge, 14--20 Aug & \citet{cwc2018}, Fig.~3 (digitised) & Upstream boundary & 6-hourly \\
+Arangaly (Chalakudy) discharge, 14--17 Aug & \citet{cwc2018}, Fig.~13 (digitised) & Tributary inflow & digitised \\
+Idukki spill, 9--18 Aug & \citet{cwc2018}, Fig.~4 (digitised) & Release factor & hourly \\
+Idamalayar release, 1 Jul--23 Aug & \citet{cwc2018}, Fig.~5 (digitised) & Release factor & daily \\
+HFL at Neeleswaram & \citet{cwc2018} & Validation & one value \\
+Sentinel-1A GRD, 21 Aug 2018 00:40 UTC, and 28 Jul 2018 & Copernicus, AWS open data & Validation flood map & 20 m \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The sea boundary uses a synthetic tide, $h(t) = 0.35\sin(2\pi t/12.42\,\mathrm{h}) + 0.20\sin(2\pi t/23.93\,\mathrm{h})$~m plus the sea-level offset factor, relative to the DEM datum (EGM2008), on the west and south edges, because no observed Kochi record could be reached. Its phase is arbitrary. The exact gauge coordinates are not published. The digitised series and their axis calibration are documented in the code archive.
+
+\section{Methods}
+\label{sec:methods}
+
+\subsection{Hydrodynamic model}
+D-Flow FM \citep{kernkamp2011} (computational kernel 1.2.184, built from the Deltares source code) runs on a 200~m rectilinear grid of 32,337 cells in UTM zone 43N, clipped to land below 20~m plus a 400~m corridor around the channel. The run spans 13 August 00:00 to 21 August 07:00 IST. The Copernicus DEM tiles are reprojected and aggregated to 200~m by averaging (and separately by minimum), the canopy height by averaging, the JRC water occurrence by maximum, so that any permanent water marks a cell as channel and narrow reaches stay connected, and WorldCover by mode. Every cell with water occurrence above 50\% is channel, with its bed set a channel depth below the lowest DSM value in the cell. Water cells not connected to the river are kept as channel cells; they exchange water with the floodplain only where they touch it. The floodplain bed is the mean DSM minus a canopy factor times the mean canopy height. Manning $n$ follows WorldCover classes (0.025--0.10). The upstream boundary takes the Neeleswaram discharge, which already includes the dam releases and the intervening catchment. A second inflow on the north edge carries the Chalakudy River, using the CWC Arangaly record (14--17 August), which then recedes in proportion to the Periyar. No local rainfall or other lateral inflow is included. Numerical settings: implicitness $\theta$ = 0.55, maximum Courant number 0.7, maximum time step 30~s (mean 28.7~s in the nominal run), wetting/drying threshold $10^{-4}$~m, bed level at faces from the mean of node values. In the nominal run $6.92\times10^9$~m\textsuperscript{3} enters through the boundaries, of which $4.27\times10^9$~m\textsuperscript{3} is river inflow (3.54 at Neeleswaram and 0.73 on the Chalakudy) and the rest is tidal inflow at the sea edges; $6.24\times10^9$~m\textsuperscript{3} leaves, storage rises by $0.68\times10^9$~m\textsuperscript{3}, and the cumulative volume error is $1.7\times10^{-4}$~m\textsuperscript{3}. This shows that the solver conserves mass; it is not evidence that the hydraulics are right, which only the observations can test. All model files are written with HYDROLIB-core.
+
+\subsection{Uncertain factors}
+Table~\ref{tab:factors} lists the eight factors and their ranges. All are sampled from independent uniform distributions. Three ranges rest on the size of known errors: the rating-curve error ($\pm$15\% on the whole Neeleswaram hydrograph, a common allowance for high-flow ratings), the two release multipliers ($\pm$20\%, for reporting and digitising error) and the sea-level offset (surge and datum uncertainty). The roughness multipliers span the usual spread of tabulated Manning values around the land-cover defaults. Channel depth and the canopy factor have no direct observation in this basin, so their ranges are chosen to explore model behaviour over all plausible values, and we read the conditioned values of these two factors with that in mind. The rating error and the release multipliers are not physically independent, because the Neeleswaram record already contains the releases. The upstream boundary flow is therefore built so that no water is counted twice:
+\begin{equation}
+Q_\mathrm{bnd}(t) = q_\mathrm{r}\,Q_\mathrm{N}(t) + (m_\mathrm{I}-1)\,R_\mathrm{I}(t-8\,\mathrm{h}) + (m_\mathrm{A}-1)\,R_\mathrm{A}(t-4\,\mathrm{h}),
+\label{eq:forcing}
+\end{equation}
+where $Q_\mathrm{N}$ is the digitised Neeleswaram hydrograph, $q_\mathrm{r}$ the rating multiplier, $R_\mathrm{I}$ and $R_\mathrm{A}$ the reported Idukki and Idamalayar releases, lagged by their travel times to Neeleswaram, and $m_\mathrm{I}$, $m_\mathrm{A}$ the release multipliers. At $m = 1$ the releases add nothing beyond what the gauge already records; $m \neq 1$ represents an error of $\pm$20\% in the released share of the gauged flow, so the factor changes the released water, not the total gauged flow plus a second copy of the releases. The Chalakudy inflow is not perturbed. Lagged releases make up 32\% of the Neeleswaram flood volume (675 and 460~\Mcm{} of 3,541~\Mcm) and 25\% of the peak (8,803~\cumecs). Over the factor ranges the upstream volume spans 0.79--1.21 times nominal. The rating multiplier stands for a systematic error of the stage--discharge relation at high flow, which scales the whole gauged hydrograph; the release multipliers stand for an error in how much of that gauged flow came from the dams, which can be wrong without the gauge being wrong. Treating them as independent factors is a modelling assumption, not an established physical independence: a rating error at high flow and an error in the reported releases may share causes. The multiplicative form below tests the other limiting case. The travel times of 8~h from Idukki and 4~h from Idamalayar are not published and are assumed. Because a lag acts only on the correction $(m-1)R$, it has no effect at $m = 1$; halving the lags or increasing them by half changes the inflow by at most 92~\cumecs{} (1.0\% of the peak) at the ends of the release ranges and does not move the time of the peak. We also reran the 23 runs accepted at $\pm$0.5~m with lags of 4 and 2~h and of 12 and 6~h (Section~\ref{sec:fixed}). Because Eq.~\ref{eq:forcing} lets the rating error act on the whole gauged flow but not on the release correction, we also ran the 23 runs accepted at $\pm$0.5~m with a multiplicative form, $q_\mathrm{r}[Q_\mathrm{N} + \sum (m-1)R]$; the two forms differ by at most 83~\cumecs{} (0.9\% of the peak) at any time and factor setting (Section~\ref{sec:fixed}).
+
+\begin{table}[htbp]
+\centering
+\caption{Uncertain factors, their ranges (independent uniform sampling) and the basis of each range.}
+\label{tab:factors}
+\small
+\begin{tabularx}{\textwidth}{@{}lp{2.4cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{3.2cm}@{}}
+\toprule
+Factor & Range & Meaning & Basis \\
+\midrule
+n\_channel & 0.7--1.3 (--) & Multiplier on channel Manning $n$ & Tabulated spread \\
+n\_floodplain & 0.6--1.5 (--) & Multiplier on floodplain Manning $n$ & Tabulated spread \\
+channel\_depth & 2--8 m & Channel bed below the lowest DSM value in the cell & Exploratory (no bathymetry) \\
+canopy\_factor & 0.3--0.9 (--) & Fraction of cell-mean canopy height subtracted from the DSM & Exploratory \\
+q\_rating & 0.85--1.15 (--) & Multiplier on the whole Neeleswaram hydrograph & High-flow rating error \\
+q\_idukki & 0.8--1.2 (--) & Scaled share of the Idukki spill, lagged 8 h & Reporting/digitising error \\
+q\_idamalayar & 0.8--1.2 (--) & Scaled share of the Idamalayar release, lagged 4 h & Reporting/digitising error \\
+tide\_offset & $-0.2$ to $+0.5$ m & Sea-level offset including surge & Surge and datum \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Screening}
+A Morris design with 20 trajectories, 4 levels and the SALib default jump $\Delta = 2/3$ (180 runs, seed 42) was generated with SALib 1.6.0 \citep{herman2017}, and 95\% confidence intervals on $\mu^*$ come from 100 bootstrap resamples. $\mu^*$ measures the overall influence of a factor; a large $\sigma$ shows that the effect varies across the factor space, through non-linearity or interaction, without separating the two or giving the share of interaction. Each run is reduced to peak flooded land, peak flood volume, mean maximum depth, time to peak, the Neeleswaram peak level and the validation scores below. Cells that are wet at the start are excluded, so the metrics describe land that the flood inundated.
+
+\subsection{Validation and conditioning}
+\label{sec:validation}
+\paragraph{HFL} The modelled level is the highest hourly median water level over the 10 channel cells within 500~m of the centre of the inflow section (76.49\textdegree E, 10.172--10.198\textdegree N), the reach where the Neeleswaram gauge lies, and it is compared with the HFL as a peak level. The exact gauge position is not published and the 200~m grid does not place a cell on it, so we take the channel cells within 500~m and their median at each hour, so that no single poorly placed cell drives the comparison. The highest hourly median is compared with the HFL because the CWC value is the maximum level recorded at the gauge during the event (16 August, 15:00 IST, with the peak discharge); the model's median peak in the nominal run comes 2~h later. In the nominal run the peak level varies by 0.26~m among these cells (14.62--14.88~m). Because this observation operator is a modelling choice, every run of the supplementary ensembles also records the peak level under six alternatives: the single nearest channel cell, the median over channel cells within 300, 750 and 1,000~m, and the highest and the lowest single-cell peak within 500~m (Section~\ref{sec:fixed}). A run that matches the HFL under any of these operators matches one level at one place; it does not show that the model's water levels are right elsewhere.
+
+\paragraph{HFL error scenario} We searched three CWC documents for the datum of the Neeleswaram HFL: the 2018 flood study report \citep{cwc2018}, which gives ``EL 12.4~m'' and the earlier HFL of EL~11.105~m (1974); the December 2018 report on the Kerala flood, which fixes warning and danger levels of 9 and 10~m at the site from its cross-section \citep{cwc2018b}; and the 2025 flood-forecasting procedure, which lists the site with warning, danger and highest flood levels of 9.00, 10.00 and 12.40~m \citep{cwc2025}. None names the vertical datum. The CWC reports give reservoir and river elevations as ``EL'' or ``above MSL'', and we assume that the HFL is referred to mean sea level through Survey of India levelling. This is an assumption, not an established fact, and the error model below is therefore a scenario for the size of the mismatch, not a verified observation-error model. The model's vertical datum is that of the Copernicus DEM, the EGM2008 geoid. We represent the mismatch by
+\begin{equation}
+\sigma_\mathrm{obs} = \sqrt{\sigma_\mathrm{datum}^2 + \sigma_\mathrm{cell}^2 + \sigma_\mathrm{mark}^2} = \sqrt{0.46^2 + 0.13^2 + 0.10^2} \approx 0.50~\mathrm{m},
+\label{eq:hflerror}
+\end{equation}
+with three components. $\sigma_\mathrm{datum}$ = 0.46~m is the RMS difference between EGM2008 geoid heights and GPS-levelling on Indian levelling benchmarks in south India \citep{srinivas2012}; it describes the EGM2008--levelling mismatch in the region, and it applies to the HFL only if the HFL is tied to that levelling network, which we assume. $\sigma_\mathrm{cell}$ = 0.13~m is half the spread of peak level among the gauge cells, a model-side representation error. $\sigma_\mathrm{mark}$ = 0.10~m is an assumed allowance for recording the peak: gauge levels are typically read at fixed intervals during floods, and near the peak the level changed slowly. The three numbers are not estimates of the same statistic. $\sigma_\mathrm{datum}$ is a regional RMS discrepancy, which applies to one benchmark only on average; $\sigma_\mathrm{cell}$ is half the range of ten modelled peaks, not a fitted standard deviation (their sample standard deviation is 0.10~m, so the choice changes $\sigma_\mathrm{obs}$ by less than 0.02~m); and $\sigma_\mathrm{mark}$ is an assumed allowance. They come from different sources (geodesy, model discretisation, field reading), so we treat them as independent, and we do not assume that any of them is Gaussian. Combining them in quadrature under that assumption gives an approximate uncertainty scale of 0.5~m, not a calibrated standard deviation. If the datum error were correlated with the DEM's own vertical error, the combined error could be larger. A tolerance of $\pm$1.0~m is about $2\sigma_\mathrm{obs}$ under this scenario and is our central case; $\pm$0.5~m (about $1\sigma_\mathrm{obs}$) is a strict case. Structural error in the modelled level, of which the 0.9~m change between the 100~m and 200~m grids (Section~\ref{sec:structural}) is one measure, is not part of $\sigma_\mathrm{obs}$. Adding it in quadrature gives a scale of about 1.0~m, so a $\pm$2$\sigma$ tolerance would be near $\pm$2~m. The 0.9~m is a single difference between two grids, not a standard deviation, so we treat it as an order of magnitude: we report $\pm$1.5~m as an intermediate structural-error scenario and $\pm$2.0~m as the full two-sigma case, and neither is a calibrated bound.
+
+\paragraph{Radar} The Sentinel-1 flood map uses calibrated VV backscatter with a 5\,$\times$\,5 filter, below an Otsu threshold on the post-event scene ($-13.8$~dB) together with a drop of more than 3~dB from 28 July, aggregated from 20~m to the 200~m grid as a flooded fraction. Permanent water (the model channel mask, from JRC occurrence) is removed, and cells with less than half valid radar coverage are excluded. No urban, radar-shadow, layover or vegetation mask was applied to the classification. A cell counts as flooded above a fraction of 0.5: 550 cells (22~\kmsq) pass this, and a further 3,231 cells have a smaller non-zero fraction, so the 22~\kmsq{} is a conservative count of clearly flooded cells rather than an estimate of flooded area. C-band radar largely misses water under tree cover and among buildings, which cover 75.8\% and 14.9\% of the land cells; the radar map is therefore treated as a lower bound on the model's flooded land, not as a target, and the hit-rate test below is restricted to open land (about 9\% of land cells). We had no independent flood map of the same date, so the accuracy of the classification is not known; the threshold tests in Section~\ref{sec:radar} show only how sensitive our results are to it.
+
+\paragraph{Acceptance rule} A run is \emph{accepted} (behavioural in the GLUE sense, which here means consistent with the two acceptance tests, not spatially validated) when its HFL error is within the tolerance ($\pm$1.0~m central, $\pm$0.5~m strict), its flooded land at the radar pass is at least 22~\kmsq, and it floods at least 75\% of the open-land cells (WorldCover cropland, grassland, bare and herbaceous wetland) that the radar shows as flooded. Land means cells that are dry at the start of the run and have valid radar coverage. The 0.75 hit rate is a lenient test of the observed open-land extent, not a skill threshold; because a wetter run floods more of every area, it favours wetter runs, and we report its effect separately (Section~\ref{sec:conditioning}). The radar test is kept despite the low spatial agreement because it is the only constraint on the dry side: a run that matches the HFL but leaves most of the open land that the radar shows as flooded dry is inconsistent with the one spatial observation we have, whatever its CSI. It cannot reject runs that flood too much. CSI is not used for acceptance, because every run overpredicts extent at the pass for the same structural reason (Section~\ref{sec:drainage}) and CSI would then select the driest runs regardless of the HFL. An earlier rule that also capped the model area at three times the radar's rejected every run of the final model (Section~\ref{sec:conditioning}).
+
+\paragraph{Ensemble and what ``constrain'' means} The five leading factors were sampled by two independent Latin hypercube designs, 200 runs (seed 42) and then 400 runs (seed 43), added because the first design gave few accepted runs; the other three factors were held at nominal values. We pool the two designs into one ensemble of 600 runs. The pool is not a single Latin hypercube with 600 strata in each dimension, but both designs sample the same independent uniform prior, so every run is an equally weighted draw from that prior and pooling is appropriate for the empirical prior and accepted ranges. The two designs are also analysed separately (Section~\ref{sec:conditioning}). We report the \emph{conditional ensemble-range contraction}
+\begin{equation}
+C = 1 - \frac{w_\mathrm{acc}}{w_\mathrm{prior}(n)},
+\label{eq:contraction}
+\end{equation}
+where $w_\mathrm{acc}$ is the full range of peak flooded land over the $n$ accepted runs and $w_\mathrm{prior}(n)$ is the width of the central interval of the prior ensemble with coverage $(n-1)/(n+1)$, the expected coverage of the range of $n$ samples (like-for-like). That coverage is exact in expectation only for $n$ independent draws from a continuous distribution; our accepted runs are a subset of a Latin hypercube selected by the observations, so the matching is approximate. $C$ is conditional on the model structure, the fixed factors, the factor ranges and the acceptance rule, and it is not a calibrated predictive interval or a reduction of predictive error. The raw prior range, the prior 5--95\% interval, the like-for-like interval, the accepted range and the accepted 5--95\% interval are all reported (Table~\ref{tab:intervals}). $C$ complements the accepted 5--95\% interval rather than replacing it: the interval says where the accepted runs lie, while $C$ compares widths on a like-for-like basis, so that the contraction is not inflated simply because a small accepted set has a narrow range. We test $C$ in four ways: a bootstrap in which the 600 runs are resampled with replacement at the run level 5,000 times, the rule is re-applied to each resample and $C$ recomputed with its own $n$ (this measures only the sampling variability of a finite ensemble, not structural, forcing or observation uncertainty; and because it treats the runs as independent draws, it ignores the stratification of the Latin hypercube designs and does not represent the variability between independent designs, which we assess instead by comparing the two designs, by repeated 200-run subsets of the pool and by a second eight-factor design); a grid of HFL tolerances (0.25--1.5~m) and hit rates (0.5--0.9); an informal likelihood weighting in place of the yes/no rule, used as an illustrative weighting scheme and not as a calibrated observation likelihood, $L = \exp[-\tfrac12(e/s)^2]\,r^p$ for HFL error $e$ and open-land hit rate $r$, with zero weight below 22~\kmsq; $s$ = 0.5~m matches $\sigma_\mathrm{obs}$ and 0.25 and 1.0~m bracket it, and $p$ = 4 is a moderate penalty on low hit rates whose choice we test with $p$ = 0, 1 and 8; and removal of the lowest or highest fifth of each factor's range, as if the range had been set narrower.
+
+\subsection{Structural tests}
+Eight structural variants were rebuilt and run at nominal parameters: the nominal model; a bare-earth proxy that takes the lowest 30~m DSM pixel in each 200~m cell (FABDEM could not be downloaded from our computing environment); full canopy removal (factor 1.0); a wider channel mask (water occurrence above 25\%); 100~m and 400~m grids; and the tide scaled by 1.5 or shifted by half an M2 period (6.21~h). Each run is scored against the radar with the full contingency table: hits, misses, false alarms and correct negatives, hit rate, false-alarm ratio, critical success index (CSI), frequency bias and equitable threat score (ETS). The radar map was also rebuilt with the Otsu threshold moved by $\pm$1.5~dB and with change thresholds of 2 and 4~dB, and scored with a cell-fraction cut-off of 0.3 as well as 0.5.
+
+\subsection{Drainage diagnosis}
+\label{sec:drainagemethod}
+To find why land stays flooded after the peak, we kept the full map output of the nominal run and of the median accepted run and classified every land cell flooded at the radar pass. The spill level of each cell, the lowest water level at which it could drain to the sea over the model terrain, comes from a priority-flood fill of the 200~m bed-level raster from the west and south (sea) edges. A flooded cell is in a \emph{closed depression} when its water level is at or below its spill level and the depression is deeper than 0.1~m, so the water can leave only by infiltration or evaporation, neither of which is modelled; \emph{draining} when it is connected and its level fell by more than 0.1~m in the 24~h before the pass; and \emph{connected, slow} otherwise. Cells next to a channel cell are counted separately and the classes are also reported without them, because there the face bed level that D-Flow FM averages from its nodes mixes channel and floodplain and can sit below the floodplain raster. We test the depression-depth threshold at 0.05, 0.1, 0.2 and 0.5~m and the level-fall threshold at 0.05, 0.1 and 0.2~m. The classes describe how the model terrain and the simulated levels hold the water; they are derived from the same terrain and simulation, and cannot show the real cause of any one false-alarm cell or that a diagnosed depression is a real isolated water body. The same fill gives the closed-depression storage of the terrain for canopy factors of 0.3--1.0 and the bare-earth proxy. Finally, we ran the nominal model once more with every closed floodplain depression filled to its spill level. This is a diagnostic experiment, not a physically validated representation of the floodplain, whose depressions drain through canals and sluices that the open data do not contain; it tests whether the ponding in the model explains the model's excess flooding.
+
+\subsection{Supplementary ensembles}
+\label{sec:suppmethod}
+Four further ensembles test choices that the main ensemble held fixed. (i) The 23 runs accepted at $\pm$0.5~m were rerun with the multiplicative release formulation (Section~\ref{sec:methods}), and twice more with shorter (4 and 2~h) and longer (12 and 6~h) release travel times. (ii) Each of those 23 runs was rerun with four Latin hypercube draws (seed 45) of the three factors held at nominal values in the main ensemble (channel roughness, Idamalayar release and sea-level offset), 92 runs. (iii) A 200-run Latin hypercube (seed 44) varied all eight factors. (iv) A 140-run Morris design (20 trajectories) screened the six factors other than the two release multipliers, to test whether the ranking depends on the release formulation. (v) The three runs whose HFL error changed most under the multiplicative form were rerun in both forms (6 runs) to check that the model is deterministic and to record every observation operator. (vi) A second 200-run eight-factor Latin hypercube with an independent seed (46) tests whether the eight-factor result depends on the sampling design.
+
+\subsection{Software and reuse}
+\label{sec:software}
+The workflow has three layers. HYDROLIB-core 1.5.0, the Deltares library, reads and writes the D-Flow FM model files and is used unchanged. A sensitivity layer (\texttt{research/gsa}) defines uncertain factors as multipliers or offsets on friction, boundary forcing and structures. It builds Morris, Sobol and Latin hypercube designs with SALib, writes one perturbed model per sample through HYDROLIB-core, and computes Morris and Sobol indices. It knows nothing about the Periyar and is tested on a different D-Flow FM model (Moergestels Broek). The case-study layer (\texttt{research/periyar}) builds the open-data model, adds model-specific factors (channel depth, canopy correction), and reduces each run to the observation operators. It also computes the conditional contraction, bootstrap, tolerance grid and likelihood weighting from any table of runs, and runs the drainage diagnosis on any D-Flow FM map file.
+
+Applying the workflow to another D-Flow FM domain needs a base model, factor definitions, observation operators (gauge position and level, or a flood map) and an acceptance rule; the remaining code is reused as it is. The repository gives installation steps, pinned package versions, the command and run time of every ensemble, and a script that recomputes the principal numbers of Tables~\ref{tab:morris}, \ref{tab:intervals}, \ref{tab:confusion} and \ref{tab:supp} from the stored per-run results without running the model (Code and data availability). D-Flow FM is deterministic for a given build: rerunning a parameter set reproduces its results to the last digit.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Validation changed the model before the GSA}
+Four revisions brought the nominal model from a 10~m level error to about 2~m (Table~\ref{tab:versions}). The versions differ in more than one respect and some were scored differently, so the table records how the model was corrected, not a controlled experiment on each change. Three corrected the model: the inflow moved onto the channel, the tidal outlet added, and the DSM corrected for canopy. One added a missing input, the Chalakudy River (v4), which doubled the share of radar-flooded land the model catches, from 28\% to 54\% (open land: 66\% to 91\%), because most radar flooding lies at the Chalakudy--Periyar confluence (Fig.~\ref{fig:study}). It also raised the total flooded land. A test with land infiltration of up to 10~mm\,h\textsuperscript{-1} removed only 25~\kmsq{} of it, so missing infiltration does not explain the excess.
+
+\begin{table}[htbp]
+\centering
+\caption{Model revisions and their nominal scores against the two observations. Scores of different versions are not strictly comparable: v1 was scored at a different cell and v1--v2 at an earlier hour (footnote). Each version changed several things at once, so the table is a record of model development, not a controlled experiment.}
+\label{tab:versions}
+\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedleft\arraybackslash}p{2.2cm}>{\raggedleft\arraybackslash}p{3.2cm}@{}}
+\toprule
+Version & Change & HFL error (m) & Flooded land at radar pass (\kmsq) \\
+\midrule
+v1 & First open-data model & +10.4\textsuperscript{a} & 350 \\
+v2 & Inflow on the channel, continuous channel, canopy correction & +2.3 & 149 \\
+v3 & Kochi inlet and tidal south edge, run past the pass & +2.4 & 123 \\
+v4 & Chalakudy River inflow added (CWC Arangaly record) & +2.4 & 190 \\
+v5 & Chalakudy flow recedes after its record ends instead of holding 799~\cumecs & +2.4 & 180 \\
+Radar & Sentinel-1, 21 Aug 2018 & 0 (HFL 12.4 m) & 22 (open water only) \\
+\bottomrule
+\end{tabularx}
+\par\smallskip
+\raggedright\footnotesize \textsuperscript{a}v1 was scored on the highest cell near the inflow, which sat 2~km off the mesh; later versions use channel cells. v1 and v2 are scored at hour 192, v3 to v5 at hour 198.
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig1.png}
+\caption{(a) Model terrain (canopy-corrected DSM), channel and boundaries. (b) Sentinel-1 open-water flood fraction, 21 August 2018 06:10 IST. (c) Nominal v5 model at the radar pass: hits (flooded in model and radar), false alarms (model only) and misses (radar only), in the same colours as Fig.~\ref{fig:confusion}.}
+\label{fig:study}
+\end{figure}
+
+\subsection{Screening of the final model}
+\label{sec:screening}
+All 180 Morris runs on v5 completed. Peak flooded land ranged from 86 to 388~\kmsq{} and peak volume from 281 to 1,385~\Mcm. Channel depth, floodplain roughness and rating-curve error lead peak area, volume and the Neeleswaram level (Table~\ref{tab:morris}), and together account for 71\% of the summed $\mu^*$ for area. Floodplain roughness dominates timing ($\mu^*$ = 42~h for time to peak). Sea level is negligible inland of the inlets ($\mu^*$ = 6~\kmsq, and 0.00~m for the gauge level). High $\sigma$ for the top factors shows that their effects depend on the other factors. The three factors fixed in the conditioning ensemble (channel roughness, Idamalayar release and sea level) account for 11\% of the summed $\mu^*$ for area. These shares describe elementary effects, not variance, and are not variance fractions.
+
+The same design on v4, before the change in the Chalakudy recession, gives the same order of all eight factors for peak area, peak volume, the gauge level and flooded land at the radar pass, with $\mu^*$ within 5\% for the leading three (v4: 150, 97 and 63~\kmsq). The gauge-level indices are identical, because the peak comes before the change. Only time to peak reorders: the canopy factor falls from second (23~h on v4) to fifth (10~h), and rating error rises to second (22~h); these shifts lie within the bootstrap confidence intervals. The five factors chosen for the conditioning ensemble are therefore still the five most influential for peak area on the final model. A first screening on v1 ranked the same top three factors, but on a model that failed both checks; it is reported only as a cautionary result.
+
+\begin{table}[htbp]
+\centering
+\caption{Morris indices on the final model v5 (180 runs): $\mu^*$ with $\sigma$ in brackets, ordered by peak flooded land. The order for peak land, volume and level is the same on v4.}
+\label{tab:morris}
+\footnotesize
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Factor & Peak land & Peak volume & Time to peak & Peak level \\
+ & (\kmsq) & (\Mcm) & (h) & (m) \\
+\midrule
+Channel depth & 149 (57) & 516 (271) & 12.5 (13.3) & 2.92 (0.63) \\
+Floodplain roughness & 101 (96) & 414 (379) & 42.1 (52.0) & 2.86 (2.46) \\
+Rating-curve error & 65 (73) & 258 (298) & 22.3 (38.4) & 2.00 (1.31) \\
+Canopy factor & 41 (38) & 56 (118) & 10.4 (26.6) & 1.74 (1.98) \\
+Idukki release & 38 (77) & 149 (309) & 18.9 (41.1) & 1.00 (1.78) \\
+Channel roughness & 31 (16) & 119 (74) & 10.4 (20.8) & 1.00 (0.17) \\
+Idamalayar release & 14 (38) & 56 (154) & 6.9 (11.2) & 0.36 (0.60) \\
+Sea-level offset & 6 (1) & 5 (2) & 1.9 (4.1) & 0.00 (0.00) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Conditioning on observations}
+\label{sec:conditioning}
+All 600 runs of the pooled ensemble completed. The prior peak flooded land spans 89--364~\kmsq{} (5--95\%: 107--329~\kmsq; median 220~\kmsq). Table~\ref{tab:intervals} gives every interval for each test alone and for both together. With the central $\pm$1.0~m tolerance, 131 runs pass the HFL, 492 the radar test and 73 both. The 73 accepted runs span 146--243~\kmsq{} (5--95\%: 156--237~\kmsq), against a like-for-like prior interval of 96--351~\kmsq{} (coverage 97\%), so $C$ = 0.62. With the strict $\pm$0.5~m tolerance, 55, 492 and 23 runs pass, the accepted runs span 146--198~\kmsq{} and $C$ = 0.77. Bootstrap resampling gives $C$ = 0.61--0.66 (60--87 accepted runs) at $\pm$1.0~m and 0.76--0.88 (16--31 runs) at $\pm$0.5~m (5--95\%); these spreads describe the finite ensemble only. The two designs give similar results when analysed alone. At $\pm$1.0~m the 200-run design accepts 23 runs (157--240~\kmsq, $C$ = 0.63) and the 400-run design 50 runs (146--243~\kmsq, $C$ = 0.61), and the accepted ranges of the five factors are nearly the same (for example channel depth 2.4--7.9 and 2.1--7.8~m, floodplain roughness 0.61--1.43 and 0.60--1.49). At $\pm$0.5~m they accept 7 and 16 runs, with $C$ = 0.84 and 0.76: a smaller accepted set gives a larger and less stable $C$. With the intermediate $\pm$1.5~m structural scenario the pooled ensemble accepts 139 runs ($C$ = 0.53), and with the two-sigma $\pm$2.0~m case 217 runs (146--323~\kmsq, $C$ = 0.34). HFL residuals have a prior median of +1.9~m (5--95\%: $-1.45$ to $+3.58$~m); the accepted runs lie between $-0.28$ and $+1.00$~m at $\pm$1.0~m (Fig.~\ref{fig:uncertainty}c). Peak volume of the accepted runs is 411--700~\Mcm{} at $\pm$1.0~m and 411--558~\Mcm{} at $\pm$0.5~m, against a prior 5--95\% range of 343--1,121~\Mcm.
+
+\begin{table}[htbp]
+\centering
+\caption{Intervals of peak flooded land (\kmsq) behind the conditional ensemble-range contraction $C$ (Eq.~\ref{eq:contraction}), for each test alone and both together. The prior range is 88.8--363.6~\kmsq{} and the prior 5--95\% interval 107.3--329.2~\kmsq{} in every row. Like-for-like: prior central interval with coverage $(n-1)/(n+1)$. The $\pm$1.5~m rows are the intermediate structural-error scenario and the $\pm$2.0~m rows the two-sigma case (Section~\ref{sec:validation}).}
+\label{tab:intervals}
+\footnotesize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llrrrrrr@{}}
+\toprule
+HFL tolerance & Test & $n$ & Like-for-like prior & Accepted range & Accepted 5--95\% & $C$ & $C$ vs prior 5--95\% \\
+\midrule
+$\pm$1.0 m & HFL only & 131 & 91.7--353.7 & 110.5--243.4 & 124.2--212.2 & 0.49 & 0.40 \\
+ & Radar only & 492 & 89.1--360.6 & 145.8--363.6 & 162.5--334.2 & 0.20 & 0.02 \\
+ & Both & 73 & 96.5--350.6 & 145.8--243.4 & 155.9--237.2 & \textbf{0.62} & 0.56 \\
+\midrule
+$\pm$0.5 m & HFL only & 55 & 97.7--349.0 & 113.9--198.2 & 131.9--179.4 & 0.66 & 0.62 \\
+ & Radar only & 492 & 89.1--360.6 & 145.8--363.6 & 162.5--334.2 & 0.20 & 0.02 \\
+ & Both & 23 & 105.3--334.2 & 145.8--198.2 & 152.3--181.7 & \textbf{0.77} & 0.76 \\
+\midrule
+$\pm$1.5 m & HFL only & 217 & 90.2--357.3 & 102.3--268.9 & 118.9--233.2 & 0.38 & 0.25 \\
+(structural) & Both & 139 & 91.2--353.8 & 145.8--268.9 & 157.4--240.1 & 0.53 & 0.45 \\
+\midrule
+$\pm$2.0 m & HFL only & 306 & 89.3--360.1 & 101.2--323.2 & 110.7--270.0 & 0.18 & 0.00 \\
+(two-sigma) & Both & 217 & 90.2--357.3 & 145.8--323.2 & 158.6--278.3 & 0.34 & 0.20 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\paragraph{What each observation contributes} In the pooled five-factor ensemble the HFL does most of the work: alone it gives $C$ = 0.49 at $\pm$1.0~m and 0.66 at $\pm$0.5~m, while the radar test alone gives 0.20. The combined 62\% at $\pm$1.0~m is therefore mostly, but not only, the HFL's. At $\pm$2.0~m the balance shifts: the HFL alone gives 0.18 and both tests 0.34, because the looser HFL test passes more dry runs, which the radar test then removes. The radar test acts only on the dry side. It rejects 108 runs, all with peak areas of 89--159~\kmsq, including 32 of the 55 runs that pass the HFL at $\pm$0.5~m, and it never rejects a wet run, so the upper end of the accepted range is set by the HFL alone. This one-sidedness follows from the rule: across the 600 runs the open-land hit rate correlates at +0.90 with peak flooded land, while the open-land and all-land CSI correlate at $-0.93$ and $-0.97$. The hit-rate test therefore favours runs that overpredict. The 22~\kmsq{} lower bound never binds: the driest run still floods 77~\kmsq{} of land at the pass, and bounds of 18, 22 and 26~\kmsq{} accept the same runs.
+
+\paragraph{Sensitivity to the analysis choices} $C$ depends on how strict the rule is (Fig.~\ref{fig:uncertainty}b, Table~\ref{tab:robust}). At $\pm$1.0~m it is 0.49 for hit rates of 0.5--0.6 (when the radar test removes at most two runs), 0.58 at 0.7 and 0.63--0.72 at 0.8--0.85; at $\pm$0.5~m it is 0.67--0.83 over the same hit rates. No run reaches a hit rate of 0.9. Replacing the yes/no rule by likelihood weights with $s$ = 0.5~m, the value of $\sigma_\mathrm{obs}$, narrows the 5--95\% interval by 62\% (121 effective runs), in line with the $\pm$1.0~m rule; $s$ = 0.25 and 1.0~m give 79\% and 35\%. The hit-rate power matters little at small $s$ and more at large $s$: with $s$ = 0.5~m, $p$ = 0, 1, 4 and 8 give 66\%, 65\%, 62\% and 55\%. At $\pm$1.0~m, removing the lowest or highest fifth of any factor's range changes $C$ to 0.57--0.64, except that dropping the highest canopy factors lowers the upper end of the accepted range to 190~\kmsq{} and raises $C$ to 0.81. The first design alone gave 7 runs accepted at $\pm$0.5~m and $C$ = 0.84; the pooled 600 runs widened the accepted range at both ends, a reminder that a small accepted set understates the range.
+
+\begin{table}[htbp]
+\centering
+\caption{Conditional ensemble-range contraction $C$ of peak flooded land under different analysis choices (600-run ensemble unless stated).}
+\label{tab:robust}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}Xrrr@{}}
+\toprule
+Analysis & Accepted / effective runs & Range (\kmsq) & $C$ \\
+\midrule
+HFL $\pm$1.0~m, acceptance rule (central) & 73 & 146--243 & 0.62 \\
+\quad bootstrap (5--95\%) & 60--87 & -- & 0.61--0.66 \\
+\quad hit rate 0.50--0.85 & 26--131 & -- & 0.49--0.72 \\
+\quad one factor range cut by a fifth (10 cases) & 38--71 & -- & 0.57--0.81 \\
+HFL $\pm$0.5~m, acceptance rule (strict) & 23 & 146--198 & 0.77 \\
+\quad bootstrap (5--95\%) & 16--31 & -- & 0.76--0.88 \\
+\quad first 200 runs only & 7 & 158--182 & 0.89 \\
+Likelihood weights, $s$ = 0.25~m, $p$ = 4 & 52 & 136--181\textsuperscript{a} & 0.79 \\
+Likelihood weights, $s$ = 0.5~m, $p$ = 4 & 121 & 136--219\textsuperscript{a} & 0.62 \\
+Likelihood weights, $s$ = 1.0~m, $p$ = 4 & 295 & 137--280\textsuperscript{a} & 0.35 \\
+Likelihood weights, $s$ = 0.5~m, $p$ = 0--8 & 113--121 & -- & 0.55--0.66\textsuperscript{a} \\
+\bottomrule
+\end{tabularx}
+\par\smallskip
+\raggedright\footnotesize \textsuperscript{a}Narrowing of the weighted 5--95\% range against the prior 5--95\% range.
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig2.png}
+\caption{(a) Empirical distribution of peak flooded land for all 600 runs and for the runs passing the HFL test, the radar test and both. (b) Narrowing of the peak flooded-land range, and the number of accepted runs, for other HFL tolerances and open-land hit rates. (c) HFL residuals of all runs (grey) and the runs accepted at $\pm$1.0~m (blue); the dark and light bands are the $\pm$0.5~m and $\pm$1.0~m tolerances.}
+\label{fig:uncertainty}
+\end{figure}
+
+The 73 runs accepted at $\pm$1.0~m still span channel depths of 2.1--7.9~m and floodplain roughness multipliers of 0.60--1.49, but depth and roughness compensate each other (correlation 0.60, and 0.70 for the 23 runs accepted at $\pm$0.5~m, against 0.01 in the prior; Fig.~\ref{fig:conditioning}b): shallow channels pass the HFL only with smooth floodplains. Canopy factors are 0.32--0.90 (median 0.78) and rating errors 0.86--1.15 (median 0.96). The earlier v3 conditioning, with an area cap at three times the radar's, is superseded: on v4 and v5 no run met that cap, because every run of v5 still floods 77~\kmsq{} or more at the radar pass.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig3.png}
+\caption{(a) Peak flooded land across the 600-run v5 ensemble (grey) and the 23 runs that pass both the HFL and the radar test (blue). (b) Channel depth against floodplain roughness multiplier for all runs and the accepted runs.}
+\label{fig:conditioning}
+\end{figure}
+
+\paragraph{Flooded land through time}
+This paragraph and Fig.~\ref{fig:timeseries} rest on 7 runs only, not on the 73 of the main analysis. The 7 accepted runs of the first 200 were run again to save flooded land every hour (Fig.~\ref{fig:timeseries}). Their peaks (158--182~\kmsq) match the ensemble values exactly. Four runs, all with channel depths of 6.3--6.9~m, peak on 17 August at 07:00--08:00, about a day after the Neeleswaram peak. The other three (depths 2.9--5.1~m) level off near 100--110~\kmsq{} and then flood a further 50--70~\kmsq{} between 17 and 19 August, after the river has begun to fall; their peaks come on 18--19 August. In every run drainage is slow: by the radar pass, when the Neeleswaram flow had fallen by about three quarters, the runs still flood 112--143~\kmsq, or 72--90\% of their peak.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig4.png}
+\caption{Flooded land (cells dry at the start) through time for the 7 runs accepted at $\pm$0.5~m among the first 200 runs of the v5 ensemble (blue), the only accepted runs for which hourly flooded land was saved; the main analysis uses the 73 runs accepted at $\pm$1.0~m among all 600, with the CWC discharges at Neeleswaram and Arangaly (grey, right axis). The diamond marks the 22~\kmsq{} of open-water flooding on the Sentinel-1 image of 21 August 06:10 IST, a lower bound because radar misses water under trees and in built-up land.}
+\label{fig:timeseries}
+\end{figure}
+
+\subsection{Agreement with the radar map}
+\label{sec:radar}
+Passing the radar test does not mean the model reproduces the flood pattern. Table~\ref{tab:confusion} gives the full contingency table for the nominal run, for the median accepted run of the 600-run ensemble (rerun with full map output; peak flooded land 166~\kmsq, HFL error +0.31~m) and for the bare-earth proxy, with the score ranges of all 73 runs accepted at $\pm$1.0~m. On all land the median accepted run catches 44\% of the radar-flooded cells, but more than nine out of ten of its own flooded cells are dry on the radar (false-alarm ratio 0.93), giving a CSI of 0.069 and a frequency bias of 5.8. On open land, where C-band radar should see standing water, the hit rate is 0.78 but the bias is still 8.1. The 73 runs accepted at $\pm$1.0~m have an all-land CSI of 0.059--0.076 and an open-land CSI of 0.080--0.098, and no run of the 600 exceeds 0.081 on all land. A CSI below 0.1 with a false-alarm ratio above 0.9 means poor spatial agreement: the accepted runs reproduce most of the open-land flooding that the radar sees, but most of what they flood is dry on the radar. On open land alone the median accepted run has 695 false-alarm cells (28~\kmsq) against 74 hits, and the open-land false-alarm ratio of the 73 accepted runs is 0.90--0.92. Model-only flooding covers the whole lower floodplain, not only the tree-covered land (Fig.~\ref{fig:confusion}). Against radar maps made with other thresholds (18--26~\kmsq{} of open-water flooding) and with a fraction cut-off of 0.3, the all-land CSI of the 7 accepted runs of the first 200, for which full maps were kept, stays between 0.048 and 0.12. These tests show that the low CSI is not removed by any classification choice we tried; they do not show that the radar map is accurate. We read the low CSI as a limitation of the model, examined in Section~\ref{sec:drainage}.
+
+\begin{table}[htbp]
+\centering
+\caption{Contingency table against the Sentinel-1 map at the radar pass (200~m cells, fraction cut-off 0.5). Counts are cells; land means cells dry at the start with valid radar coverage, open land the WorldCover open classes within it. The nominal run and the median accepted run are different parameter sets and are reported in separate blocks. Last two rows: range over the 73 runs accepted at $\pm$1.0~m (scores only).}
+\label{tab:confusion}
+\footnotesize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llrrrrrrrr@{}}
+\toprule
+Run & Domain & Hits & Misses & False al. & Corr. neg. & Hit rate & FAR & CSI & Bias \\
+\midrule
+Nominal & all land & 278 & 272 & 4,216 & 17,122 & 0.51 & 0.94 & 0.058 & 8.2 \\
+Nominal & open land & 85 & 10 & 993 & 872 & 0.89 & 0.92 & 0.078 & 11.3 \\
+\midrule
+Median accepted & all land & 241 & 310 & 2,958 & 18,512 & 0.44 & 0.93 & 0.069 & 5.8 \\
+Median accepted & open land & 74 & 21 & 695 & 1,175 & 0.78 & 0.90 & 0.094 & 8.1 \\
+\midrule
+Bare-earth proxy & all land & 340 & 200 & 5,789 & 21,407 & 0.63 & 0.94 & 0.054 & 11.3 \\
+73 accepted runs & all land & -- & -- & -- & -- & -- & -- & 0.059--0.076 & -- \\
+73 accepted runs & open land & -- & -- & -- & -- & 0.76--0.88 & 0.90--0.92 & 0.080--0.098 & -- \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig5.png}
+\caption{Model against radar at the radar pass, cell by cell, for (a) the nominal run, (b) the median accepted run of the pooled 600-run ensemble (by peak flooded land, among the 23 runs accepted at $\pm$0.5~m, all of which are also accepted at $\pm$1.0~m) and (c) the bare-earth proxy. Colours as in Fig.~\ref{fig:study}c: hits (flooded in model and radar), false alarms (model only), misses (radar only) and land dry in both. CSI on all land.}
+\label{fig:confusion}
+\end{figure}
+
+\subsection{Structural tests}
+\label{sec:structural}
+No structural variant brings the land flooded at the radar pass near the radar's 22~\kmsq{} or raises CSI above 0.085 (Table~\ref{tab:structural}). The bare-earth proxy cuts the HFL error from +2.4~m to $-0.8$~m but floods more land at the pass and does not raise CSI, so neither it nor any other variant can be presented as a fix. Full canopy removal and a wider channel mask each lower the HFL error by 0.6--1.1~m. On the 100~m grid (131,654 cells) peak flooded land and the land flooded at the pass are within 1\% of the 200~m run, but the gauge level is 0.9~m higher and the peak comes 12~h later; the area results are thus robust to the grid, while the gauge level is not. On the 400~m grid the inflow boundary did not connect properly to the mesh (boundary inflow fell from 6.9 to $4.5\times10^9$~m\textsuperscript{3}), so it is reported as a failed configuration. A 1.5$\times$ tide or a half-period shift changes flooded land by less than 1\% and the gauge level by less than 0.01~m.
+
+\begin{table}[htbp]
+\centering
+\caption{Structural variants at nominal parameter values.}
+\label{tab:structural}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Variant & Peak land & Land at pass & Peak volume & HFL error & CSI \\
+ & (\kmsq) & (\kmsq) & (\Mcm) & (m) & (all / open) \\
+\midrule
+Nominal (200 m) & 263 & 180 & 855 & +2.44 & 0.058 / 0.078 \\
+Bare-earth proxy & 353 & 245 & 934 & $-0.76$ & 0.054 / 0.076 \\
+Full canopy removal & 292 & 201 & 860 & +1.31 & 0.053 / 0.076 \\
+Wider channel mask & 210 & 140 & 643 & +1.84 & 0.054 / 0.085 \\
+100 m grid & 263 & 179 & 921 & +3.32 & 0.053 / 0.069 \\
+Tide $\times$1.5 & 265 & 180 & 856 & +2.44 & 0.058 / 0.078 \\
+Tide shifted 6.21 h & 264 & 182 & 854 & +2.44 & 0.058 / 0.078 \\
+400 m grid & \multicolumn{5}{c}{failed: inflow not connected to the mesh} \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\subsection{Why the land stays flooded after the peak}
+\label{sec:drainage}
+The structural variants of Section~\ref{sec:structural} and the first part of this diagnosis use nominal parameters; the median accepted run is analysed separately below, and the two are not combined.
+Mass is conserved (Section~\ref{sec:methods}), so the excess flooding is water that the model keeps on the land, not water it creates. In the nominal run 179.8~\kmsq{} of land is flooded at the radar pass and 355~\Mcm{} is stored on it. Of the flooded land, 128.1~\kmsq{} lies in closed depressions below their spill level, holding 250~\Mcm{} at a mean depth of 1.95~m (Table~\ref{tab:drainage}, Fig.~\ref{fig:drainage}a); 100.9~\kmsq{} of it was already ponded 24~h earlier. A further 38.0~\kmsq{} is still draining and 13.6~\kmsq{} is connected but almost static. Closed-depression cells account for 120.5 of the 168.6~\kmsq{} of false alarms, and 77\% of them are under tree cover. Of the 128.1~\kmsq, 34.5~\kmsq{} lies next to channel cells, where the averaged face bed level can sit below the floodplain raster; the other 93.6~\kmsq{} are depressions in the floodplain terrain itself, with a median depth of 2.9~m (10--90\%: 0.95--7.3~m).
+
+The closed-depression class is insensitive to its threshold: with depression depths of 0.05--0.5~m it covers 124.6--128.1~\kmsq, or 90.1--93.6~\kmsq{} without the cells next to channels. The level-fall threshold only moves land between the draining and slow classes (draining 21.6--40.4~\kmsq{} for thresholds of 0.2--0.05~m). The cells next to channels hold 96 of the 250~\Mcm{} in closed depressions, so they matter more for storage than for area. Their ponding may be partly numerical: the bed level at a face between a channel and a floodplain cell is an average of the two, so water can enter a bank-side cell from the channel at a level that the cell's own terrain then holds below its rim. After the depressions were filled, 31.9 of the remaining 48.2~\kmsq{} of closed cells lie next to channels, which is consistent with this reading. Separating it from real bank-side depressions would need a finer grid or a sub-grid bed representation along the banks, which we did not test. The median accepted run behaves the same way: of its 128.0~\kmsq{} flooded at the pass, 97.6~\kmsq{} (34.5 of them next to channel cells) is in closed depressions, holding 202 of 271~\Mcm. The depressions are a property of the DSM-derived terrain, not of one parameter set. For every canopy factor from 0.3 to 1.0 the model terrain below 20~m contains 352--379~\kmsq{} of closed depressions deeper than 0.1~m, with 1,067--1,255~\Mcm{} of storage; the bare-earth proxy still has 298~\kmsq{} and 981~\Mcm{} (Table~\ref{tab:drainage}). This is why neither the canopy factor nor the bare-earth proxy removes the excess flooding.
+
+Filling every closed floodplain depression to its spill level and rerunning the nominal model removes nearly half of the water stored on land at the pass (355 to 187~\Mcm) but only 15\% of the flooded land (179.8 to 153.0~\kmsq). The water that no longer ponds spreads as shallow sheets over flat land: the connected-but-slow class grows from 13.6 to 57.6~\kmsq{} at a mean depth of 0.59~m. The remaining closed-depression cells (48.2~\kmsq) lie mostly next to channel cells (31.9~\kmsq). CSI barely changes (0.058 to 0.061 on all land; 0.078 to 0.085 on open land), and the HFL error rises from +2.44 to +2.66~m consistent with less floodplain storage near the gauge. Closed depressions therefore explain most of the water held on the land but not most of the excess extent. We find no single blocked path: the excess is spread over the lower floodplain, in DSM depressions and on low-gradient land that the model drains slowly without the canals, sluices, infiltration and evaporation of the real floodplain. These are mechanisms diagnosed in the model, not verified real-world causes: the classes come from the same terrain and simulation that they describe, and some diagnosed depressions may be artefacts of the surface model rather than real isolated water bodies. We class the excess flooding as an unresolved structural discrepancy of the open-data model.
+
+\begin{table}[htbp]
+\centering
+\caption{Drainage state of land flooded at the radar pass (nominal parameters), and closed-depression storage of the model terrain.}
+\label{tab:drainage}
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\multicolumn{5}{@{}l}{(a) Flooded land at the pass, by class} \\
+ & \multicolumn{2}{c}{Nominal} & \multicolumn{2}{c}{Depressions filled} \\
+Class & \kmsq & \Mcm & \kmsq & \Mcm \\
+\midrule
+Closed depression & 128.1 & 250 & 48.2 & 87 \\
+\quad next to a channel cell & 34.5 & -- & 31.9 & -- \\
+Draining & 38.0 & 89 & 47.2 & 65 \\
+Connected, slow & 13.6 & 16 & 57.6 & 34 \\
+Total & 179.8 & 355 & 153.0 & 187 \\
+\midrule
+\multicolumn{5}{@{}l}{(b) Closed depressions in the model terrain below 20~m (non-channel cells)} \\
+Terrain & \multicolumn{2}{r}{Area $>$0.1~m deep (\kmsq)} & \multicolumn{2}{r}{Storage (\Mcm)} \\
+\midrule
+Canopy factor 0.3 & \multicolumn{2}{r}{352} & \multicolumn{2}{r}{1,255} \\
+Canopy factor 0.6 (nominal) & \multicolumn{2}{r}{363} & \multicolumn{2}{r}{1,196} \\
+Canopy factor 0.9 & \multicolumn{2}{r}{375} & \multicolumn{2}{r}{1,096} \\
+Canopy factor 1.0 & \multicolumn{2}{r}{379} & \multicolumn{2}{r}{1,067} \\
+Bare-earth proxy & \multicolumn{2}{r}{298} & \multicolumn{2}{r}{981} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig6.png}
+\caption{Drainage state of land flooded at the radar pass, at nominal parameters: (a) the nominal model; (b) the same model with every closed floodplain depression filled to its spill level. Closed depression: water at or below the spill level; draining: level fell by more than 0.1~m in the previous 24~h; connected, slow: the rest. The red lines along the river in both panels are cells next to channel cells (Section~\ref{sec:drainage}).}
+\label{fig:drainage}
+\end{figure}
+
+\subsection{Supplementary ensembles}
+\label{sec:fixed}
+All 92 fixed-factor runs, all 200 eight-factor runs, all 23 runs with the multiplicative release form, all 46 runs with other travel times, all 140 Morris runs and the 6 repeat runs completed; none failed. Table~\ref{tab:supp} compares them with the main ensemble.
+
+\paragraph{Release formulation} With the multiplicative form, 22 of the 23 runs change peak flooded land by less than 1~\kmsq{} and 13 change the HFL error by less than 0.01~m. Three runs change more: their HFL errors move by $-0.32$, $+0.29$ and $+0.76$~m, and one of them gains 37~\kmsq{} of peak flooded land. The model is deterministic (a repeated run reproduces its original to the last digit), so these are real responses to a forcing change of less than 1\%, not noise; they show that the peak level at the gauge responds unevenly to small changes in the inflow. 21 of the 23 runs remain accepted at $\pm$0.5~m (152--198~\kmsq) and 22 at $\pm$1.0~m (152--219~\kmsq).
+
+\paragraph{Release travel times} With the shorter lags (4 and 2~h), 21 of the 23 runs change peak flooded land by less than 1~\kmsq{} and 17 change the HFL error by less than 0.01~m; the largest changes are +0.29~m and +37~\kmsq, in the same run that jumped under the multiplicative form. All 23 runs stay accepted at $\pm$1.0~m (146--219~\kmsq) and 21 at $\pm$0.5~m (146--198~\kmsq). With the longer lags (12 and 6~h), 22 runs change peak land by less than 1~\kmsq{} and 12 change the HFL error by less than 0.01~m; three runs move by $-0.33$, +0.19 and +0.64~m, and the last of these gains 62~\kmsq{} (160 to 221~\kmsq) and its flooded land now peaks during the main flood wave (hour 105) instead of 36~h later. That run (HFL error +1.05~m) is the only one rejected, so 22 runs remain accepted at both $\pm$0.5 and $\pm$1.0~m (146--198~\kmsq). The assumed travel times therefore change the accepted interval by less than the choice between the two tolerances, but they show the same uneven gauge response as the release formulation: a forcing change of about 1\% can move single runs by up to 0.6~m.
+
+\paragraph{Fixed factors around the accepted runs} When channel roughness, the Idamalayar release and sea level are varied around each of the 23 strictly accepted runs, 57 of the 92 runs pass at $\pm$1.0~m and 30 at $\pm$0.5~m, and 22 of the 23 parent runs keep at least one accepted variant. The accepted peak flooded land spans 146--214~\kmsq{} at $\pm$1.0~m, against 146--198~\kmsq{} for the parents and 146--243~\kmsq{} for the main ensemble. Of the 35 rejected variants, 25 fail the radar test and 10 have HFL errors above +1.0~m. Channel roughness decides most of this: the rejected variants have a mean multiplier of 0.87 and the accepted ones 1.08, because smoother channels drain the floodplain faster. The change in HFL error from the parent run ranges from $-0.70$ to $+2.34$~m and a linear fit on the three factors explains only 20\% of it, again showing an uneven response of the gauge level. Depth and floodplain roughness still compensate each other among the accepted variants (correlation 0.67).
+
+\paragraph{All eight factors varied} In the 200-run eight-factor ensemble, 47 runs pass the HFL at $\pm$1.0~m, 162 pass the radar test and 22 pass both. The accepted runs span 150--210~\kmsq, against a like-for-like prior interval of 111--335~\kmsq, so $C$ = 0.73 (bootstrap 0.71--0.79, 15--29 accepted runs), compared with 0.62 for the five-factor ensemble. The HFL alone gives 0.62 and the radar alone 0.17, so the HFL still does most of the work. At $\pm$0.5~m only 3 runs are accepted, too few for a stable estimate; at $\pm$1.5~m, 47 runs give $C$ = 0.54 (0.53 in the main ensemble). The accepted runs cover nearly the full range of the three added factors (channel roughness 0.76--1.30, Idamalayar release 0.80--1.19, sea level $-0.14$ to $+0.46$~m). With channel roughness free, the correlation between channel depth and floodplain roughness among the accepted runs falls from 0.60 to 0.16: channel roughness takes over part of the compensation. The prior distributions of peak flooded land are nearly the same in the two ensembles (five factors: median 220~\kmsq, 5--95\% 107--329~\kmsq; eight factors: 222 and 117--332~\kmsq), and the eight-factor accepted range measured against the five-factor prior with the same $n$ gives $C$ = 0.74, so the difference between 0.62 and 0.73 does not come from the prior. It comes from the accepted range, whose upper end is 210~\kmsq{} in the eight-factor ensemble and 243~\kmsq{} in the five-factor one, and with 22 accepted runs that upper end rests on few runs. Random 200-run subsets of the pooled five-factor ensemble give $C$ = 0.56--0.74 (5--95\% of 5,000 subsets, with 18--31 accepted runs), and 7\% of them reach 0.73, so a difference of this size is within what a 200-run design can produce by chance. SEED46TEXT The supplementary eight-factor experiments therefore do not indicate that fixing the three factors inflated the main conditional contraction, although the comparison remains subject to ensemble-sampling uncertainty; we do not read the eight-factor value as the more reliable estimate merely because more factors were varied.
+
+\paragraph{Abrupt responses to small forcing changes} Taken together, the three forcing variants show a response that is smooth for most parameter sets and abrupt for a few (Table~\ref{tab:forcing}). In each variant, 20--22 of the 23 runs change peak flooded land by less than 1~\kmsq{} and 12--17 change the HFL error by less than 0.01~m, while one run changes peak land by 37--62~\kmsq{} and two or three runs change the HFL error by 0.1~m or more, up to 0.76~m. These few runs change acceptance status: at $\pm$0.5~m, 2, 2 and 1 of the 23 runs drop out under the multiplicative form, the shorter lags and the longer lags, and at $\pm$1.0~m, 1, 0 and 1. All of them fail on the HFL, none on the radar test, and all had HFL errors of +0.35 to +0.49~m before the change, close to the strict tolerance. The largest change in peak land comes with a change of timing: under the longer lags one run reaches its peak during the main flood wave (hour 105) instead of 36~h later, and its peak land grows from 160 to 221~\kmsq. Because the model is deterministic, these are responses of the hydraulics to forcing changes of about 1\%, not noise. They mean that acceptance near the tolerance edge depends on forcing details that a single forcing realisation hides, and that the parameter--response surface is not uniformly smooth.
+
+\begin{table}[htbp]
+\centering
+\caption{Response of the 23 runs accepted at $\pm$0.5~m to three forcing variants. $\Delta A$: change in peak flooded land; $\Delta e$: change in HFL error. Drop-outs: runs no longer accepted (all on the HFL test). The model is deterministic, so all differences are responses to the forcing change.}
+\label{tab:forcing}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Variant & $|\Delta A| < 1$~\kmsq & max $|\Delta A|$ (\kmsq) & $|\Delta e| < 0.01$~m & max $|\Delta e|$ (m) & Drop-outs $\pm$0.5~m & Drop-outs $\pm$1.0~m \\
+\midrule
+Multiplicative release form & 22 & 37 & 13 & 0.76 & 2 & 1 \\
+Shorter lags (4/2~h) & 21 & 37 & 17 & 0.29 & 2 & 0 \\
+Longer lags (12/6~h) & 22 & 62 & 12 & 0.64 & 1 & 1 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\paragraph{HFL observation operator} Across the 484 supplementary runs that recorded them, the nearest cell, the medians within 300, 750 and 1,000~m and the highest cell within 500~m differ from the main operator by at most 0.31~m in runs within $\pm$1.5~m of the HFL, apart from two of the travel-time runs (0.41 and 0.44~m); larger differences, up to 0.90~m, occur only in Morris runs that are 1.2--3.8~m below the HFL. The lowest single-cell peak is on average 0.23~m lower (by up to 1.58~m). In the eight-factor ensemble the nearest cell, the medians and the highest cell accept 20--22 runs over the same 150--210~\kmsq; only the lowest-cell operator accepts more (28 runs, up to 252~\kmsq). The three runs whose HFL error jumped under the multiplicative form were repeated in both forms and reproduced their earlier results exactly. In one of them the jump (+0.29~m) is the same under every operator (+0.28 to +0.30~m), so the whole reach near the gauge rises. In the other two the jumps ($-0.32$ and +0.76~m) appear under the nearest-cell, median and highest-cell operators ($-0.18$ to $-0.57$~m and +0.65 to +0.89~m) but hardly under the lowest cell (+0.01 and +0.12~m), so most channel cells around the gauge rise or fall together while the lowest one barely changes. In all three runs the jump is therefore a response of the river level near the gauge, not an artefact of the operator used to read it. The choice of operator therefore matters much less than the tolerance.
+
+\paragraph{Screening without the release factors} A second Morris design (20 trajectories, 140 runs) holds both release multipliers at 1 and varies the other six factors over the same ranges. Peak flooded land spans 86--399~\kmsq. Channel depth ($\mu^*$ = 164~\kmsq) and floodplain roughness (103~\kmsq) remain first and second for peak land, peak volume, the gauge level and flooded land at the radar pass, and they lead the gauge level in the opposite order (2.99 and 2.56~m). The canopy factor (76~\kmsq) moves ahead of rating-curve error (56~\kmsq) for peak land, but their bootstrap confidence intervals ($\pm$33 and $\pm$19~\kmsq) overlap, so the two are not separable; channel roughness stays fifth (38~\kmsq) and sea level last (6~\kmsq). Removing the release factors therefore does not change which factors dominate, and the release factors do not hide or mimic the effect of channel geometry or roughness. The $\mu^*$ values are not comparable one to one with Table~\ref{tab:morris}, because the trajectories differ.
+
+\begin{table}[htbp]
+\centering
+\caption{Supplementary ensembles compared with the main five-factor ensemble (acceptance at $\pm$1.0~m unless stated). The bracketed value (0.80) rests on only 3 accepted runs, too few for a stable estimate, and should not be compared with the others.}
+\label{tab:supp}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Ensemble & Runs & Accepted & Accepted peak land (\kmsq) & $C$ \\
+\midrule
+Main, five factors & 600 & 73 & 146--243 & 0.62 \\
+Main, five factors, $\pm$0.5~m & 600 & 23 & 146--198 & 0.77 \\
+Eight factors & 200 & 22 & 150--210 & 0.73 \\
+Eight factors, $\pm$0.5~m & 200 & 3 & 150--172 & (0.80) \\
+Eight factors, $\pm$1.5~m & 200 & 47 & 150--262 & 0.54 \\
+Main, five factors, $\pm$2.0~m & 600 & 217 & 146--323 & 0.34 \\
+Eight factors, $\pm$2.0~m & 200 & 73 & 150--319 & 0.33 \\
+SEED46ROWS
+Fixed factors varied around the 23 strict runs & 92 & 57 & 146--214 & -- \\
+Multiplicative release form, 23 strict runs & 23 & 22 & 152--219 & -- \\
+Shorter lags (4/2~h), 23 strict runs & 23 & 23 & 146--219 & -- \\
+Longer lags (12/6~h), 23 strict runs & 23 & 22 & 146--198 & -- \\
+\bottomrule
+\end{tabular}}
+\par\smallskip
+\raggedright\footnotesize $C$ is computed only for ensembles that sample the prior; the reruns of accepted runs are not prior samples.
+\end{table}
+
+\section{Discussion}
+\label{sec:discussion}
+
+\paragraph{What the observations can and cannot do}
+The two observations did two different jobs. They exposed structural errors that the GSA could not, and the HFL then contracted the range of predicted peak flood area within the ensemble by 62\% at the central $\pm$1.0~m tolerance and 77\% at the strict $\pm$0.5~m. The radar scene added little to this (alone, $C$ = 0.20), and only by removing dry runs. Neither observation made the model spatially right: the accepted runs reproduce most of the open-land flooding that the radar sees, but flood five to six times too much land at the radar pass. The contraction is therefore a statement about parameter uncertainty given this model structure, these fixed factors and these factor ranges, and not about predictive accuracy. The v1 screening ranked the right factors on a model that was 10~m wrong, which is a warning for GSA studies without validation.
+
+\paragraph{How robust the contraction is to fixed choices}
+The supplementary ensembles (Section~\ref{sec:fixed}) test the choices that the main ensemble held fixed. Varying all eight factors gave $C$ = 0.73 rather than 0.62. The priors are nearly identical, and repeated 200-run subsets of the five-factor ensemble span 0.56--0.74, so this difference lies within ensemble-sampling variability SEED46DISC. The eight-factor experiments do not indicate that fixing three factors inflated the main contraction, but they do not show that the true value is higher either. The ranking of the leading factors does not depend on the release factors. The release formulation, the release travel times and the choice among reasonable gauge operators change the accepted range by less than the step from $\pm$0.5 to $\pm$1.0~m. The tolerance is therefore the analysis choice that matters most, and it rests on an observation-error scenario rather than a documented datum. The tolerance matters most on average, but not for every run.
+
+\paragraph{Abrupt responses near the acceptance edge}
+The most instructive supplementary result concerns single runs. In a deterministic model, forcing changes of about 1\% left most of the 23 strictly accepted runs unchanged, but moved one to three runs per variant by up to 0.76~m at the gauge (by similar amounts under all but the lowest-cell operator) and by up to 62~\kmsq{} in peak flooded land, and up to two runs per variant lost their acceptance (Table~\ref{tab:forcing}). Such jumps arise where the flow sits near a threshold, for example where a slightly larger or earlier wave overtops a bank or fills a floodplain compartment that otherwise stays dry, and the timing shift of 36~h in one run points to this kind of switch. For conditioning, the consequence is that the accepted set is not a smooth region of parameter space: runs near the tolerance edge can enter or leave it with small changes in forcing that a single forcing realisation does not sample. Sampling the forcing alongside the parameters, or reporting acceptance as a frequency over several forcing realisations, would make this visible. Until then, $C$ is best read to the first decimal place.
+
+\paragraph{Structural discrepancy}
+The ensemble excludes several sources of error: terrain error beyond the canopy factor (buildings, embankments, DSM noise), channel geometry beyond a uniform depth below the cell minimum, grid resolution, local rainfall and lateral inflows, infiltration and evaporation, and canals and sluices. The diagnosis in Section~\ref{sec:drainage} shows that the excess post-peak flooding is held on the land by closed depressions in the DSM-derived terrain and by slow drainage of low-gradient land, and that no single terrain change we made removes it. The gauge level also shifts by 0.9~m between grids, about $2\sigma_\mathrm{obs}$. A structural error term of that size would lower the contraction further, towards the 34\% of the $\pm$2.0~m two-sigma case and the 35\% of the $s$ = 1.0~m weighting. We therefore read 62\% as a conditional result, and the 35--79\% spread across likelihood weightings as a measure of how much it depends on analysis choices, not as a confidence interval.
+
+\paragraph{Channel geometry leads the ranking}
+Channel depth leads peak area, volume and the gauge level on both model versions, so the lack of bathymetry is the largest parameter uncertainty. Measured depths would narrow the range of accepted parameters, and would loosen the depth--roughness compensation, but they would not by themselves remove the excess flooding, which comes from the floodplain terrain.
+
+\paragraph{Canopy correction}
+The canopy factor ranks fourth for peak area, and full canopy removal lowers the HFL error by 1.1~m. The accepted runs favour removing most of the canopy height (median factor 0.78) but do not exclude 0.32. Because the range of this factor is exploratory, we read this as a preference rather than an estimate. DSM-based models of vegetated tropical floodplains should treat the correction as an explicit uncertain factor. A bare-earth product such as FABDEM \citep{hawker2022} is worth testing, but our proxy still has 298~\kmsq{} of closed depressions, so a bare-earth DEM alone should not be expected to fix the drainage.
+
+\paragraph{Equifinality}
+Channel depth and floodplain roughness compensate each other (correlation 0.60 in the 73 accepted runs), so one HFL mark cannot separate them, in line with the equifinality that motivates GLUE \citep{beven1992} and with the trade-off between channel depth and friction found when calibrating a hydraulic model against radar flood extents \citep{wood2016}. A second gauge or an image taken near the peak could separate them.
+
+\paragraph{Radar limits}
+Of the land cells, 75.8\% are tree cover and 14.9\% built-up, where C-band radar sees little open water, and the only scene was taken 5 days after the peak. Uncertainty in the satellite flood map itself also limits how strongly it can test a model \citep{stephens2012}. These limits explain why the radar can serve only as a lower bound with a hit-rate test \citep[rather than as a binary pattern to match;][]{aronica2002}, and why the test favours wetter runs. They do not explain the open-land false alarms, which come from the drainage behaviour of the model (Section~\ref{sec:drainage}).
+
+\paragraph{What transfers}
+What transfers to other basins is the workflow, not the numbers: an open-data model built and run with HYDROLIB-core, validation used to revise the structure before screening, a Morris screening repeated on the final structure, an ensemble conditioned on whatever sparse observations exist, and a report of the conditional contraction with every interval, every observation's contribution and the structural tests that bound it. The 62--77\% contraction, the factor ranking and the accepted ranges are results for this basin, this model and these two observations. For other forested monsoon floodplains we state three hypotheses rather than findings: that a single high-flood mark constrains the predicted area mainly through channel depth and floodplain roughness and leaves them in compensation; that a post-peak radar scene over tree cover rejects the driest runs but not the wettest; and that a DSM-based floodplain will hold water in closed depressions after the peak. The omitted processes could shift this balance. Infiltration and evaporation would let water leave the depressions and lower the flooded area at the pass, which could make a radar image more informative. Explicit dam operation would change the timing of the release factors. Rainfall on the floodplain would add water locally.
+
+\subsection{Limitations}
+\begin{itemize}
+\item Excess post-peak flooding. At the radar pass every run still floods 77--250~\kmsq{} of land against 22~\kmsq{} of open water on the radar. It is held in DSM depressions and on low-gradient land (Section~\ref{sec:drainage}) and remains an unresolved structural discrepancy.
+\item The tide is synthetic, and there is no local rainfall, lateral inflow, infiltration or evaporation on the model domain. The tide tests and the Morris screening show a negligible effect of sea level, for these tests and this model only.
+\item Boundary flows were digitised from report figures, and the gauge location was inferred from the water mask. The HFL datum is not documented in the three CWC reports we searched; we assume it is close to mean sea level, so $\sigma_\mathrm{obs}$ and the tolerances are a scenario, not a measured error. The release travel times (8 and 4~h) are assumed; tests with half and 1.5 times these values change the accepted range by less than the tolerance step.
+\item The radar classification has no urban, shadow, layover or vegetation mask, and its accuracy is unknown; the 22~\kmsq{} is a conservative count.
+\item The model uses 200~m cells and one event; the bare-earth test uses a proxy, not FABDEM.
+\item Factor ranges are expert assumptions, sampled independently; the channel depth and canopy ranges are exploratory. In the main ensemble three factors were held at nominal values; they make up 11\% of the summed Morris $\mu^*$ for area (a share of $\mu^*$, not of variance). Varying them gave a larger contraction (0.73) in one 200-run design with only 22 accepted runs; the difference from 0.62 lies within ensemble-sampling variability. All results are conditional on these choices.
+\item The gauge level and flooded area respond abruptly to small forcing changes in a few runs (up to 0.76~m and 62~\kmsq{} for a change of about 1\%), and up to two of 23 runs per forcing variant changed acceptance status, so acceptance near the tolerance edge is not smooth in the factors or the forcing.
+\item The model has not been validated for operational use. It was tested against one gauge mark and one radar scene for one event.
+\end{itemize}
+
+\section{Conclusions}
+\label{sec:conclusions}
+
+We built an open-data D-Flow FM model of the 2018 Periyar flood with HYDROLIB-core, screened it with 180 Morris runs and conditioned a pooled 600-run ensemble from two Latin hypercube designs on one high-flood level and one Sentinel-1 scene. Validation against the same two observations exposed three structural errors and one missing tributary that the sensitivity analysis did not. On the final model, channel depth, floodplain roughness and rating-curve error lead the flooded area, as they did before the last revision, and sea level is negligible. Conditioning contracted the range of peak flooded land within the ensemble by 62\% with an HFL tolerance of $\pm$1.0~m, about twice the estimated observation error, and by 77\% with $\pm$0.5~m, to 146--243 and 146--198~\kmsq. The high-flood level does most of this; the radar test removes only dry runs, and channel depth and floodplain roughness stay in compensation. One 200-run ensemble varying all eight factors gave 73\%, a difference from 62\% that lies within ensemble-sampling variability; it does not indicate that fixing three factors inflated the result, and it is not a more reliable estimate. On average the release formulation, release travel times and gauge operator matter less than the tolerance, which rests on an assumed datum, but a few runs respond abruptly to forcing changes of about 1\% and can leave the accepted set. These figures are conditional on the model structure, the fixed factors, the factor ranges and the acceptance rule, and they are not a reduction of predictive error. The accepted runs still flood far more land than the radar shows after the peak, because the DSM-based terrain holds water in closed depressions and drains low land slowly; filling the depressions does not remove the excess, and we leave it as an unresolved structural discrepancy. The model has not been validated for operational use. What we offer for other basins is the workflow, with its explicit reporting of intervals, contributions and structural limits, rather than the numbers.
+
+\section*{Code and data availability}
+{\sloppy All scripts (model build, sensitivity runs, radar flood map, validation, structural tests, analysis and figures), the digitised CWC flow records, the radar maps and the per-run results of every ensemble are in the HYDROLIB-core fork at \url{https://github.com/karthice1/HYDROLIB-core}, under \texttt{research/periyar} and \texttt{research/gsa}; \texttt{research/periyar/README.md} lists the command behind every table and figure, \texttt{research/periyar/REPRODUCE.md} gives installation and reuse instructions, \texttt{research/periyar/requirements.txt} pins the Python packages, and \texttt{python -m research.periyar.check\_results} recomputes the principal numbers of Tables 4, 5, 7 and 10 and Section~\ref{sec:drainage} from the stored runs. \textbf{[AUTHOR INPUT REQUIRED: Zenodo DOI of the archived release.]}\par}
+
+\section*{CRediT authorship contribution statement}
+\textbf{[AUTHOR INPUT REQUIRED: CRediT roles for Karthik V and Roopa D.]}
+
+\section*{Declaration of competing interest}
+\textbf{[AUTHOR INPUT REQUIRED: competing-interest statement.]}
+
+\section*{Acknowledgements}
+\textbf{[AUTHOR INPUT REQUIRED: acknowledgements and funding.]}
+
+\begin{thebibliography}{99}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+
+\bibitem[{Aronica et~al.(2002)Aronica, Bates and Horritt}]{aronica2002}
+Aronica, G.T., Bates, P.D., Horritt, M.S., 2002. Assessing the uncertainty in distributed model predictions using observed binary pattern information within {GLUE}. Hydrological Processes 16, 2001--2016.
+
+\bibitem[{Bates et~al.(2004)Bates, Horritt, Aronica and Beven}]{bates2004}
+Bates, P.D., Horritt, M.S., Aronica, G., Beven, K.J., 2004. Bayesian updating of flood inundation likelihoods conditioned on flood extent data. Hydrological Processes 18, 3347--3370.
+
+\bibitem[{Beven and Binley(1992)}]{beven1992}
+Beven, K., Binley, A., 1992. The future of distributed models: model calibration and uncertainty prediction. Hydrological Processes 6, 279--298. \url{https://doi.org/10.1002/hyp.3360060305}.
+
+\bibitem[{Campolongo et~al.(2007)Campolongo, Cariboni and Saltelli}]{campolongo2007}
+Campolongo, F., Cariboni, J., Saltelli, A., 2007. An effective screening design for sensitivity analysis of large models. Environmental Modelling \& Software 22, 1509--1518. \url{https://doi.org/10.1016/j.envsoft.2006.10.004}.
+
+\bibitem[{CWC(2018a)}]{cwc2018}
+CWC (Central Water Commission), 2018a. Study Report: Kerala Floods of August 2018. Hydrological Studies Organisation, Hydrology (S) Directorate, Government of India, New Delhi.
+
+\bibitem[{CWC(2018b)}]{cwc2018b}
+CWC (Central Water Commission), 2018b. Report on Kerala Flood \& Solutions. Central Water Commission, December 2018. \url{https://sdma.kerala.gov.in/wp-content/uploads/2020/10/Kerala_28122018_CWC_December-2018.pdf}.
+
+\bibitem[{CWC(2025)}]{cwc2025}
+CWC (Central Water Commission), 2025. Standard Operating Procedure for Flood Forecasting. Government of India, Central Water Commission, New Delhi, April 2025. \url{https://cwc.gov.in/sites/default/files/sopapril2025.pdf}.
+
+\bibitem[{ESA(2021)}]{esa2021}
+ESA, 2021. Copernicus DEM GLO-30 (Copernicus Digital Elevation Model, 30 m). European Space Agency. \url{https://doi.org/10.5270/ESA-c5d3d65}. \textcopyright{} DLR e.V. 2010--2014 and \textcopyright{} Airbus Defence and Space GmbH 2014--2018, provided under COPERNICUS by the European Union and ESA.
+
+\bibitem[{Government of Kerala and UN(2018)}]{pdna2018}
+Government of Kerala and UN, 2018. Kerala Post Disaster Needs Assessment: Floods and Landslides, August 2018. Government of Kerala with the United Nations (UNDP), Thiruvananthapuram.
+
+\bibitem[{Hall et~al.(2005)Hall, Tarantola, Bates and Horritt}]{hall2005}
+Hall, J.W., Tarantola, S., Bates, P.D., Horritt, M.S., 2005. Distributed sensitivity analysis of flood inundation model calibration. Journal of Hydraulic Engineering 131, 117--126. \url{https://doi.org/10.1061/(ASCE)0733-9429(2005)131:2(117)}.
+
+\bibitem[{Hawker et~al.(2022)Hawker, Uhe, Paulo, Sosa, Savage, Sampson and Neal}]{hawker2022}
+Hawker, L., Uhe, P., Paulo, L., Sosa, J., Savage, J., Sampson, C., Neal, J., 2022. A 30 m global map of elevation with forests and buildings removed. Environmental Research Letters 17, 024016. \url{https://doi.org/10.1088/1748-9326/ac4d4f}.
+
+\bibitem[{Herman and Usher(2017)}]{herman2017}
+Herman, J., Usher, W., 2017. {SALib}: An open-source Python library for sensitivity analysis. Journal of Open Source Software 2, 97. \url{https://doi.org/10.21105/joss.00097}.
+
+\bibitem[{Kernkamp et~al.(2011)Kernkamp, Van~Dam, Stelling and de~Goede}]{kernkamp2011}
+Kernkamp, H.W.J., Van Dam, A., Stelling, G.S., de Goede, E.D., 2011. Efficient scheme for the shallow water equations on unstructured grids with application to the Continental Shelf. Ocean Dynamics 61, 1175--1188. \url{https://doi.org/10.1007/s10236-011-0423-6}.
+
+\bibitem[{Mishra and Shah(2018)}]{mishra2018}
+Mishra, V., Shah, H.L., 2018. Hydroclimatological perspective of the Kerala flood of 2018. Journal of the Geological Society of India 92, 645--650. \url{https://doi.org/10.1007/s12594-018-1079-3}.
+
+\bibitem[{Montanari et~al.(2009)Montanari, Hostache, Matgen, Schumann, Pfister and Hoffmann}]{montanari2009}
+Montanari, M., Hostache, R., Matgen, P., Schumann, G., Pfister, L., Hoffmann, L., 2009. Calibration and sequential updating of a coupled hydrologic-hydraulic model using remote sensing-derived water stages. Hydrology and Earth System Sciences 13, 367--380. \url{https://doi.org/10.5194/hess-13-367-2009}.
+
+\bibitem[{Morris(1991)}]{morris1991}
+Morris, M.D., 1991. Factorial sampling plans for preliminary computational experiments. Technometrics 33, 161--174.
+
+\bibitem[{Pappenberger et~al.(2005)Pappenberger, Beven, Hunter, Bates, Gouweleeuw, Thielen and de~Roo}]{pappenberger2005}
+Pappenberger, F., Beven, K.J., Hunter, N.M., Bates, P.D., Gouweleeuw, B.T., Thielen, J., de Roo, A.P.J., 2005. Cascading model uncertainty from medium range weather forecasts (10 days) through a rainfall-runoff model to flood inundation predictions within the European Flood Forecasting System ({EFFS}). Hydrology and Earth System Sciences 9, 381--393. \url{https://doi.org/10.5194/hess-9-381-2005}.
+
+\bibitem[{Pekel et~al.(2016)Pekel, Cottam, Gorelick and Belward}]{pekel2016}
+Pekel, J.F., Cottam, A., Gorelick, N., Belward, A.S., 2016. High-resolution mapping of global surface water and its long-term changes. Nature 540, 418--422. \url{https://doi.org/10.1038/nature20584}.
+
+\bibitem[{Pianosi et~al.(2016)Pianosi, Beven, Freer, Hall, Rougier, Stephenson and Wagener}]{pianosi2016}
+Pianosi, F., Beven, K., Freer, J., Hall, J.W., Rougier, J., Stephenson, D.B., Wagener, T., 2016. Sensitivity analysis of environmental models: A systematic review with practical workflow. Environmental Modelling \& Software 79, 214--232. \url{https://doi.org/10.1016/j.envsoft.2016.02.008}.
+
+\bibitem[{Saltelli et~al.(2008)Saltelli, Ratto, Andres, Campolongo, Cariboni, Gatelli, Saisana and Tarantola}]{saltelli2008}
+Saltelli, A., Ratto, M., Andres, T., Campolongo, F., Cariboni, J., Gatelli, D., Saisana, M., Tarantola, S., 2008. Global Sensitivity Analysis: The Primer. John Wiley \& Sons, Chichester.
+
+\bibitem[{Savage et~al.(2016)Savage, Bates, Freer, Neal and Aronica}]{savage2016}
+Savage, J.T.S., Bates, P., Freer, J., Neal, J., Aronica, G.T., 2016. When does spatial resolution become spurious in probabilistic flood inundation predictions? Hydrological Processes 30, 2014--2032. \url{https://doi.org/10.1002/hyp.10749}.
+
+\bibitem[{Schumann et~al.(2009)Schumann, Bates, Horritt, Matgen and Pappenberger}]{schumann2009}
+Schumann, G., Bates, P.D., Horritt, M.S., Matgen, P., Pappenberger, F., 2009. Progress in integration of remote sensing-derived flood extent and stage data and hydraulic models. Reviews of Geophysics 47, RG4001. \url{https://doi.org/10.1029/2008RG000274}.
+
+\bibitem[{Srinivas et~al.(2012)Srinivas, Tiwari, Tarial, Prajapti, Meshram, Singh and Nagarajan}]{srinivas2012}
+Srinivas, N., Tiwari, V.M., Tarial, J.S., Prajapti, S., Meshram, A.E., Singh, B., Nagarajan, B., 2012. Gravimetric geoid of a part of South India and its comparison with global geopotential models and GPS-levelling data. Journal of Earth System Science 121, 1025--1032. \url{https://doi.org/10.1007/s12040-012-0205-7}.
+
+\bibitem[{Stephens et~al.(2012)Stephens, Bates, Freer and Mason}]{stephens2012}
+Stephens, E.M., Bates, P.D., Freer, J.E., Mason, D.C., 2012. The impact of uncertainty in satellite data on the assessment of flood inundation models. Journal of Hydrology 414--415, 162--173.
+
+\bibitem[{Sudheer et~al.(2019)Sudheer, Bhallamudi, Narasimhan, Thomas, Bindhu, Vema and Kurian}]{sudheer2019}
+Sudheer, K.P., Bhallamudi, S.M., Narasimhan, B., Thomas, J., Bindhu, V.M., Vema, V., Kurian, C., 2019. Role of dams on the floods of August 2018 in Periyar River Basin, Kerala. Current Science 116, 780--794. \url{https://doi.org/10.18520/cs/v116/i5/780-794}.
+
+\bibitem[{Teng et~al.(2017)Teng, Jakeman, Vaze, Croke, Dutta and Kim}]{teng2017}
+Teng, J., Jakeman, A.J., Vaze, J., Croke, B.F.W., Dutta, D., Kim, S., 2017. Flood inundation modelling: A review of methods, recent advances and uncertainty analysis. Environmental Modelling \& Software 90, 201--216. \url{https://doi.org/10.1016/j.envsoft.2017.01.006}.
+
+\bibitem[{Tolan et~al.(2024)}]{tolan2024}
+Tolan, J., Yang, E., Nosarzewski, B., Couairon, G., Vo, H.V., Brandt, J., Spore, J., Majumdar, S., Haziza, D., Vamaraju, J., Moutakanni, T., Bojanowski, P., Johns, T., White, B., Tiecke, T., Couprie, C., Saenz, E., 2024. Very high resolution canopy height maps from {RGB} imagery using self-supervised vision transformer and convolutional decoder trained on aerial lidar. Remote Sensing of Environment 300, 113888. \url{https://doi.org/10.1016/j.rse.2023.113888}.
+
+\bibitem[{Wood et~al.(2016)Wood, Hostache, Neal, Wagener, Giustarini, Chini, Corato, Matgen and Bates}]{wood2016}
+Wood, M., Hostache, R., Neal, J., Wagener, T., Giustarini, L., Chini, M., Corato, G., Matgen, P., Bates, P., 2016. Calibration of channel depth and friction parameters in the LISFLOOD-FP hydraulic model using medium-resolution SAR data and identifiability techniques. Hydrology and Earth System Sciences 20, 4983--4997. \url{https://doi.org/10.5194/hess-20-4983-2016}.
+
+\bibitem[{Zanaga et~al.(2022)}]{zanaga2022}
+Zanaga, D., Van De Kerchove, R., Daems, D., De Keersmaecker, W., Brockmann, C., Kirches, G., Wevers, J., Cartus, O., Santoro, M., Fritz, S., Lesiv, M., Herold, M., Tsendbazar, N.E., Xu, P., Ramoino, F., Arino, O., 2022. {ESA} {WorldCover} 10 m 2021 v200. Zenodo. \url{https://doi.org/10.5281/zenodo.7254221}.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,13 @@
+# Python packages used for the Periyar study (versions of the published runs).
+# HYDROLIB-core itself is installed from this repository: pip install -e .
+hydrolib-core==1.5.0
+meshkernel==8.3.0
+SALib==1.6.0
+numpy==2.5.3
+pandas==3.0.5
+scipy==1.18.1
+rasterio==1.5.2
+pyproj==3.8.0
+shapely==2.2.0
+netCDF4==1.7.5
+matplotlib==3.11.2

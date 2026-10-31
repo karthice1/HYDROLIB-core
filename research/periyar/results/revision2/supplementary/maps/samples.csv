@@ -1,0 +1,3 @@
+run,n_channel,n_floodplain,channel_depth,canopy_factor,q_rating,q_idukki,q_idamalayar,tide_offset
+0,1.0,1.0,4.0,0.6,1.0,1.0,1.0,0.0
+1,1.0,0.717767668358416,3.350745784741588,0.6483149391476882,0.957238229823363,1.0306811815911832,1.0,0.0
