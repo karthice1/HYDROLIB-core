@@ -1,4 +1,14 @@
-# Values for the Zenodo "New upload" form
+# Uploading to Zenodo
+
+1. Log in at https://zenodo.org (a GitHub or ORCID login works) and click **New upload**.
+2. Drag `periyar-flood-workflow-v1.0.zip` into the Files box. Do not unzip it.
+3. Under **Digital Object Identifier**, answer "No" to "Do you already have a DOI" and click
+   **Get a DOI now!**. This reserves the DOI before publishing.
+4. Fill in the form with the values below, then click **Publish**. After publishing, the
+   files cannot be changed (only a new version can be added).
+5. Copy the DOI (10.5281/zenodo.NNNNNNN) from the record page and send it.
+
+## Form values
 
 | Field | Value |
 |---|---|
