@@ -1,7 +1,7 @@
 # Periyar 2018 flood model and sensitivity analysis
 
-Scripts, inputs and results behind the manuscript *Global sensitivity analysis of
-the 2018 Periyar flood with open data* (`manuscript/manuscript.tex`).
+Scripts, inputs and results behind the manuscript *How far can one gauge mark and one radar image narrow
+parameter uncertainty in an open-data flood model?* (`manuscript/manuscript.tex`).
 
 ## Inputs
 
