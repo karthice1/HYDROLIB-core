@@ -25,8 +25,8 @@ commit given in `COMMIT.txt`). It is a fork of Deltares HYDROLIB-core 1.5.0.
 | `research/periyar/manuscript/` | LaTeX source of the submitted manuscript |
 
 The large open input data sets (Copernicus DEM, canopy height, JRC water, ESA WorldCover,
-Sentinel-1 scenes) are not included. `research/periyar/README.md` says where to download
-each one.
+Sentinel-1 scenes) are not included. `research/periyar/data_manifest.csv` gives the exact
+product, tile or scene, download location and checksum of each file.
 
 ## Quick start
 
@@ -37,7 +37,12 @@ each one.
    python -m research.periyar.check_results
    ```
 
-   It recomputes 42 numbers from the stored results and prints PASS or FAIL for each.
+   It recomputes 120 published values from the stored results and prints PASS or FAIL for each.
+
+   `python -m research.periyar.verify_data DATA_DIR` checks downloaded source data against
+   `research/periyar/data_manifest.csv` (product, tile or scene, URL, processing, SHA-256).
+   `research/periyar/test_report/` holds the clean-environment test report of this release.
+   These checks do not run D-Flow FM.
 
 2. Rerun or reuse the workflow: see `research/periyar/REPRODUCE.md`. Model runs need
    D-Flow FM 1.2.184 (Deltares Delft3D source, commit

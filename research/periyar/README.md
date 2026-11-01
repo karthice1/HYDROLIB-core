@@ -63,9 +63,16 @@ python -m research.periyar.radar_check OUT.csv --states NAME=radar_state.npz ...
 python -m research.periyar.forcing_audit MODEL_DIR OUT_DIR
 python -m research.periyar.drainage RUN_DIR SAR.tif OUT_DIR [--fill-from BASE --dflowfm DFLOWFM]
 python -m research.periyar.drainage --terrain-scan BASE OUT.csv
-# Supplementary ensembles: see results/revision2/supplementary/chain_rev[234].sh for the exact
+# Supplementary ensembles: see results/revision2/supplementary/chain_rev[2-6].sh for the exact
 # commands (release form, fixed factors, eight-factor LHS, six-factor Morris, travel times, repeats);
 # results/revision2/supplementary/compare_reruns.py compares the reruns with their originals.
+# Round 5: chain_rev6.sh reruns 14 stratified central runs (samples_central.csv) under the three
+# forcing variants into results/revision2/central/; compare_central.py summarises them (Table 10).
+
+# Checks (no model runs): published numbers, source data, clean-environment release report
+python -m research.periyar.check_results
+python -m research.periyar.verify_data DATA_DIR        # sizes and SHA-256 from data_manifest.csv
+bash research/periyar/release_checks.sh [DATA_DIR]      # writes research/periyar/test_report/
 
 # Figures
 python -m research.periyar.figures MODEL_DIR SAR.tif FIG_DIR --ensemble RUNS_LHS [RUNS_LHS2 ...] --time-series OUT.csv \
