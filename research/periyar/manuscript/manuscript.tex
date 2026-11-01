@@ -560,6 +560,19 @@ What transfers to other basins is the workflow, not the numbers: an open-data mo
 
 We built an open-data D-Flow FM model of the 2018 Periyar flood with HYDROLIB-core, screened it with 180 Morris runs and conditioned a pooled 600-run ensemble from two Latin hypercube designs on one high-flood level and one Sentinel-1 scene. Validation against the same two observations exposed three structural errors and one missing tributary that the sensitivity analysis did not. On the final model, channel depth, floodplain roughness and rating-curve error lead the flooded area, as they did before the last revision, and sea level is negligible. Conditioning contracted the range of peak flooded land within the pooled five-factor ensemble by 62\% with an HFL tolerance of $\pm$1.0~m, about twice the estimated observation error, and by 77\% with $\pm$0.5~m, to 146--243 and 146--198~\kmsq. The high-flood level does most of this; the radar test removes only dry runs, and channel depth and floodplain roughness stay in compensation. Two independently seeded 200-run ensembles varying all eight factors gave 73\% and 69\%, a difference from 62\% that lies within ensemble-sampling variability; it does not indicate that fixing three factors inflated the result, and it is not a more reliable estimate. On average the release formulation, release travel times and gauge operator matter less than the tolerance, which rests on an assumed datum, but a few runs respond abruptly to forcing changes of about 1\% and can leave the accepted set. These figures are conditional on the model structure, the fixed factors, the factor ranges and the acceptance rule, and they are not a reduction of predictive error. The accepted runs still flood far more land than the radar shows after the peak, because the DSM-based terrain holds water in closed depressions and drains low land slowly; filling the depressions does not remove the excess, and we leave it as an unresolved structural discrepancy. The model has not been validated for operational use. What we offer for other basins is the workflow, with its explicit reporting of intervals, contributions and structural limits, rather than the numbers.
 
+\section*{Software availability}
+\begin{itemize}
+\item Name: Periyar flood sensitivity and uncertainty workflow (\texttt{research/periyar}, \texttt{research/gsa}), built on HYDROLIB-core
+\item Developers: Karthik V and Roopa D; HYDROLIB-core by Deltares
+\item Contact: karthik.vasanthakumar@kahedu.edu.in
+\item Year first available: 2026
+\item Hardware: any computer that runs D-Flow FM; the ensembles were run on 4 CPU cores
+\item Software required: Python 3.13 with the packages pinned in \texttt{research/periyar/requirements.txt}; D-Flow FM computational kernel 1.2.184 for new model runs (not needed to check the published numbers)
+\item Language: Python; about 2,600 lines of research code
+\item Licence and cost: MIT licence, free
+\item Availability: \url{https://github.com/karthice1/HYDROLIB-core}, archived at \textbf{[AUTHOR INPUT REQUIRED: Zenodo DOI]}
+\end{itemize}
+
 \section*{Code and data availability}
 {\sloppy All scripts (model build, sensitivity runs, radar flood map, validation, structural tests, analysis and figures), the digitised CWC flow records, the radar maps and the per-run results of every ensemble are in the HYDROLIB-core fork at \url{https://github.com/karthice1/HYDROLIB-core}, under \texttt{research/periyar} and \texttt{research/gsa}; \texttt{research/periyar/README.md} lists the command behind every table and figure, \texttt{research/periyar/REPRODUCE.md} gives installation and reuse instructions, \texttt{research/periyar/requirements.txt} pins the Python packages, and \texttt{python -m research.periyar.check\_results} recomputes the principal numbers of Tables 4, 5, 7, 10 and 11 and Section~\ref{sec:drainage} from the stored runs. \textbf{[AUTHOR INPUT REQUIRED: Zenodo DOI of the archived release.]}\par}
 
@@ -571,6 +584,9 @@ We built an open-data D-Flow FM model of the 2018 Periyar flood with HYDROLIB-co
 
 \section*{Acknowledgements}
 \textbf{[AUTHOR INPUT REQUIRED: acknowledgements and funding.]}
+
+\section*{Declaration of generative AI and AI-assisted technologies in the writing process}
+\textbf{[AUTHOR INPUT REQUIRED: statement on the use of AI tools in preparing this work.]}
 
 \begin{thebibliography}{99}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
