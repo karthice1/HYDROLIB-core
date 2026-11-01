@@ -1,14 +1,39 @@
 {
   "title": "Periyar 2018 flood: open-data D-Flow FM model, sensitivity and uncertainty workflow (research code and results)",
   "upload_type": "software",
-  "description": "Research code, per-run results and manuscript sources for the article \"How far can one gauge mark and one radar image narrow parameter uncertainty in an open-data flood model? Sensitivity analysis of the 2018 Periyar flood\". The study code is in research/periyar and research/gsa; it builds on the HYDROLIB-core library by Deltares (MIT licence), which this fork contains unchanged. See research/periyar/REPRODUCE.md for installation, reproduction and reuse.",
+  "description": "Research code, per-run results and manuscript sources for the article \"How far can one gauge mark and one radar image narrow parameter uncertainty in an open-data flood model? Sensitivity analysis of the 2018 Periyar flood\". The archive is a snapshot of the GitHub fork karthice1/HYDROLIB-core at tag v1.0-periyar, plus the clean-environment test report of that exact commit. Licensing (see NOTICE): HYDROLIB-core 1.5.0, copyright Deltares, MIT (LICENSE), included unchanged; the research code in research/gsa and research/periyar, copyright Karthik V and Roopa D, MIT (research/LICENSE); the manuscript source in research/periyar/manuscript is not MIT-licensed. python -m research.periyar.check_results recomputes 120 published values from the stored results without running D-Flow FM. See README_FIRST.md and research/periyar/REPRODUCE.md.",
   "creators": [
-    {"name": "V, Karthik", "affiliation": "Karpagam Academy of Higher Education, Coimbatore, India"},
-    {"name": "D, Roopa", "affiliation": "Karpagam Academy of Higher Education, Coimbatore, India"}
+    {
+      "name": "V, Karthik",
+      "affiliation": "Karpagam Academy of Higher Education, Coimbatore, India"
+    },
+    {
+      "name": "D, Roopa",
+      "affiliation": "Karpagam Academy of Higher Education, Coimbatore, India"
+    }
   ],
   "license": "MIT",
-  "keywords": ["flood inundation modelling", "global sensitivity analysis", "Morris method", "uncertainty", "D-Flow FM", "HYDROLIB-core", "Sentinel-1", "Kerala 2018 flood"],
+  "keywords": [
+    "flood inundation modelling",
+    "global sensitivity analysis",
+    "Morris method",
+    "uncertainty",
+    "D-Flow FM",
+    "HYDROLIB-core",
+    "Sentinel-1",
+    "Kerala 2018 flood"
+  ],
   "related_identifiers": [
-    {"identifier": "https://github.com/Deltares/HYDROLIB-core", "relation": "isDerivedFrom", "resource_type": "software"}
-  ]
+    {
+      "identifier": "https://github.com/karthice1/HYDROLIB-core/tree/v1.0-periyar",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    },
+    {
+      "identifier": "https://github.com/Deltares/HYDROLIB-core",
+      "relation": "isDerivedFrom",
+      "resource_type": "software"
+    }
+  ],
+  "version": "v1.0-periyar"
 }

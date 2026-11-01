@@ -26,7 +26,9 @@ python -m pytest research/gsa/tests               # 7 tests, about 5 s
 
 `bash research/periyar/release_checks.sh [DATA_DIR]` does all of this in a new virtual
 environment, runs the checks of step 2 and writes a report to `research/periyar/test_report/`.
-The report for the archived release is included.
+The Zenodo archive contains this report for the archived commit itself;
+`research/periyar/zenodo/build_archive.sh` builds the archive, COMMIT.txt and the report from one
+commit and verifies the result.
 
 Only steps 3 and 4 need D-Flow FM. The published runs used computational kernel 1.2.184,
 built from the Deltares Delft3D source at commit

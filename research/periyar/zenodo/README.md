@@ -12,8 +12,8 @@ Karpagam Academy of Higher Education, Coimbatore, India.
 ## What is in this archive
 
 This archive is a snapshot of the GitHub repository
-<https://github.com/karthice1/HYDROLIB-core> (branch `claude/project-thread-hlha70`,
-commit given in `COMMIT.txt`). It is a fork of Deltares HYDROLIB-core 1.5.0.
+<https://github.com/karthice1/HYDROLIB-core> (tag `v1.0-periyar`; the full commit hash is in
+`COMMIT.txt`). It is a fork of Deltares HYDROLIB-core 1.5.0.
 
 | Folder | Contents |
 |---|---|
@@ -41,7 +41,8 @@ product, tile or scene, download location and checksum of each file.
 
    `python -m research.periyar.verify_data DATA_DIR` checks downloaded source data against
    `research/periyar/data_manifest.csv` (product, tile or scene, URL, processing, SHA-256).
-   `research/periyar/test_report/` holds the clean-environment test report of this release.
+   `research/periyar/test_report/` holds the clean-environment test report of the same commit
+   as `COMMIT.txt`.
    These checks do not run D-Flow FM.
 
 2. Rerun or reuse the workflow: see `research/periyar/REPRODUCE.md`. Model runs need
@@ -50,5 +51,9 @@ product, tile or scene, download location and checksum of each file.
 
 ## Licence
 
-MIT (see `LICENSE`). HYDROLIB-core is copyright Deltares and is distributed under the same
-licence.
+See `NOTICE`. HYDROLIB-core 1.5.0 (everything outside `research/`) is copyright Deltares,
+MIT licence (`LICENSE`), included unchanged. The research code in `research/gsa` and
+`research/periyar` is copyright Karthik V and Roopa D, MIT licence (`research/LICENSE`).
+The manuscript source in `research/periyar/manuscript` is not covered by the MIT licence.
+Third-party source data are not redistributed; their licences are listed in
+`research/periyar/data_manifest.csv`.
