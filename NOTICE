@@ -1,0 +1,24 @@
+NOTICE: ownership and licences in this repository
+
+This repository is a fork of HYDROLIB-core (https://github.com/Deltares/HYDROLIB-core).
+It contains two separately owned bodies of code, both under the MIT licence.
+
+1. HYDROLIB-core 1.5.0: everything outside research/, except .zenodo.json and this NOTICE.
+   Copyright (c) 2021 Deltares. MIT licence: see LICENSE. Used unchanged.
+
+2. Periyar flood sensitivity and uncertainty workflow: research/gsa and research/periyar.
+   Original work by Karthik V and Roopa D, Karpagam Academy of Higher Education,
+   Coimbatore, India. Copyright (c) 2026 Karthik V and Roopa D. MIT licence: see
+   research/LICENSE. This includes the per-run results, the radar flood maps derived by
+   the workflow and the discharge series digitised from the Central Water Commission
+   report (research/periyar/data/README.md).
+
+Not covered by either MIT licence:
+- research/periyar/manuscript: the manuscript source and figures of the article
+  submitted to Environmental Modelling & Software. Copyright remains with the authors;
+  it is included only so that the published numbers can be traced to their source.
+- Third-party source data (Copernicus DEM, Meta/WRI canopy height, JRC Global Surface
+  Water, ESA WorldCover, Sentinel-1). These are not redistributed here; each keeps its own
+  licence, listed in research/periyar/data_manifest.csv.
+- D-Flow FM, which is needed for new model runs and is distributed by Deltares under its
+  own licence.

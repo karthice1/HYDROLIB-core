@@ -1,0 +1,45 @@
+{
+  "radar_hour": 198.0,
+  "flooded_land_at_pass_km2": 127.96,
+  "false_alarm_km2": 118.32,
+  "land_storage_at_pass_mcm": 271.2463426848252,
+  "land_storage_at_end_mcm": 270.2599088781075,
+  "gauge_cells": 10,
+  "gauge_cell_peak_levels_m": [
+    12.54,
+    12.55,
+    12.6,
+    12.64,
+    12.7,
+    12.72,
+    12.73,
+    12.73,
+    12.73,
+    12.74
+  ],
+  "gauge_peak_level_spread_m": 0.19763766260343374,
+  "gauge_median_peak_m": 12.709012440832435,
+  "gauge_median_peak_hour": 136.0,
+  "ponded": {
+    "depression_depth_m_quantiles": {
+      "q10": 1.13,
+      "q50": 3.25,
+      "q90": 7.51
+    },
+    "water_below_spill_m_quantiles": {
+      "q10": 0.16,
+      "q50": 0.92,
+      "q90": 5.06
+    },
+    "land_cover_share": {
+      "built-up": 0.041,
+      "cropland": 0.073,
+      "grassland": 0.131,
+      "herbaceous wetland": 0.007,
+      "mangroves": 0.0,
+      "tree cover": 0.742,
+      "water": 0.005
+    },
+    "already_ponded_24h_before_km2": 78.4
+  }
+}

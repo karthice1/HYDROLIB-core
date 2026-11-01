@@ -1,0 +1,4 @@
+class,flooded_km2,false_alarm_km2,open_land_false_alarm_km2,next_to_channel_km2,stored_mcm,mean_depth_m
+closed depression,97.64,90.68,18.6,34.48,202.21389220124763,2.071014873015646
+draining,25.6,23.28,8.64,2.24,59.805469367653004,2.3361511471739456
+"connected, slow",4.72,4.36,0.56,0.12,8.781675345184988,1.860524437539192

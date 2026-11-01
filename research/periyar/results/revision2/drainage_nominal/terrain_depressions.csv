@@ -1,0 +1,6 @@
+terrain,depression_area_km2_over_0.1m,depression_area_km2_over_1m,depression_storage_mcm
+canopy factor 0.3,352.12,256.48,1255.398743038827
+canopy factor 0.6,362.68,260.48,1196.3421069210185
+canopy factor 0.9,375.08,264.88,1095.8458270646568
+canopy factor 1.0,378.88,262.52,1067.3491507893148
+bare-earth proxy,298.32,153.24,980.5093029004894

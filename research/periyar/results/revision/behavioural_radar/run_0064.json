@@ -1,0 +1,23 @@
+{
+  "model_hour": 198.0,
+  "sar_hour": 198.16666666666666,
+  "model_flooded_km2": 127.6,
+  "sar_flooded_km2": 21.72,
+  "all_hits": 246,
+  "all_misses": 297,
+  "all_false_alarms": 2944,
+  "all_hit_rate": 0.4530386740331492,
+  "all_false_alarm_ratio": 0.922884012539185,
+  "all_critical_success_index": 0.07054774878118726,
+  "all_bias": 5.874769797421731,
+  "open_hits": 82,
+  "open_misses": 13,
+  "open_false_alarms": 746,
+  "open_hit_rate": 0.8631578947368421,
+  "open_false_alarm_ratio": 0.9009661835748792,
+  "open_critical_success_index": 0.09750297265160524,
+  "open_bias": 8.715789473684211,
+  "neeleswaram_peak_level_m": 12.696237125474669,
+  "neeleswaram_peak_hour": 89.0,
+  "hfl_error_m": 0.2962371254746685
+}
