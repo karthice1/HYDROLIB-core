@@ -1,0 +1,141 @@
+Table 4: Morris mu* for peak flooded land (km2), v5
+PASS  mu* channel_depth: manuscript 149, recomputed 148.515
+PASS  mu* n_floodplain: manuscript 101, recomputed 100.863
+PASS  mu* q_rating: manuscript 65, recomputed 64.602
+
+Table 5: pooled five-factor ensemble (seed 42 + seed 43)
+PASS  runs: manuscript 600, recomputed 600.000
+PASS  accepted at +-1.0 m: manuscript 73, recomputed 73.000
+PASS  C at +-1.0 m: manuscript 0.62, recomputed 0.616
+PASS  accepted at +-0.5 m: manuscript 23, recomputed 23.000
+PASS  C at +-0.5 m: manuscript 0.77, recomputed 0.771
+PASS  accepted at +-1.5 m: manuscript 139, recomputed 139.000
+PASS  C at +-1.5 m: manuscript 0.53, recomputed 0.531
+PASS  accepted at +-2.0 m: manuscript 217, recomputed 217.000
+PASS  C at +-2.0 m: manuscript 0.34, recomputed 0.336
+PASS  C, HFL only, +-1.0 m: manuscript 0.49, recomputed 0.492
+PASS  C, radar only: manuscript 0.2, recomputed 0.198
+
+The two Latin hypercube designs separately (+-1.0 m)
+PASS  v5_lhs200 accepted: manuscript 23, recomputed 23.000
+PASS  v5_lhs200 C: manuscript 0.63, recomputed 0.626
+PASS  v5_lhs400 accepted: manuscript 50, recomputed 50.000
+PASS  v5_lhs400 C: manuscript 0.61, recomputed 0.612
+
+Table 11: eight-factor ensemble (seed 44)
+PASS  accepted at +-1.0 m: manuscript 22, recomputed 22.000
+PASS  C at +-1.0 m: manuscript 0.73, recomputed 0.732
+PASS  accepted at +-1.5 m: manuscript 47, recomputed 47.000
+PASS  C at +-1.5 m: manuscript 0.54, recomputed 0.543
+PASS  accepted at +-2.0 m: manuscript 73, recomputed 73.000
+PASS  C at +-2.0 m: manuscript 0.33, recomputed 0.328
+
+Table 11: second eight-factor ensemble (seed 46) and both designs pooled
+PASS  seed 46 accepted at +-1.0 m: manuscript 23, recomputed 23.000
+PASS  seed 46 C at +-1.0 m: manuscript 0.69, recomputed 0.693
+PASS  seed 46 accepted at +-0.5 m: manuscript 7, recomputed 7.000
+PASS  seed 46 C at +-0.5 m: manuscript 0.75, recomputed 0.752
+PASS  pooled eight-factor accepted at +-1.0 m: manuscript 45, recomputed 45.000
+PASS  pooled eight-factor C at +-1.0 m: manuscript 0.72, recomputed 0.723
+
+Table 11: fixed factors around the 23 strict runs
+PASS  fixed factors accepted at +-1.0 m: manuscript 57, recomputed 57.000
+PASS  fixed factors accepted at +-0.5 m: manuscript 30, recomputed 30.000
+
+Table 10: forcing reruns of the 23 strict runs, every cell
+PASS  multiplicative runs with |dA| < 1 km2: manuscript 22, recomputed 22.000
+PASS  multiplicative max |dA| (km2): manuscript 37, recomputed 37.080
+PASS  multiplicative runs with |de| < 0.01 m: manuscript 13, recomputed 13.000
+PASS  multiplicative max |de| (m): manuscript 0.76, recomputed 0.761
+PASS  multiplicative drop-outs at +-0.5 m: manuscript 2, recomputed 2.000
+PASS  multiplicative drop-outs at +-1.0 m: manuscript 1, recomputed 1.000
+PASS  lag_short runs with |dA| < 1 km2: manuscript 21, recomputed 21.000
+PASS  lag_short max |dA| (km2): manuscript 37, recomputed 37.240
+PASS  lag_short runs with |de| < 0.01 m: manuscript 17, recomputed 17.000
+PASS  lag_short max |de| (m): manuscript 0.29, recomputed 0.294
+PASS  lag_short drop-outs at +-0.5 m: manuscript 2, recomputed 2.000
+PASS  lag_short drop-outs at +-1.0 m: manuscript 0, recomputed 0.000
+PASS  lag_long runs with |dA| < 1 km2: manuscript 22, recomputed 22.000
+PASS  lag_long max |dA| (km2): manuscript 62, recomputed 61.600
+PASS  lag_long runs with |de| < 0.01 m: manuscript 12, recomputed 12.000
+PASS  lag_long max |de| (m): manuscript 0.64, recomputed 0.643
+PASS  lag_long drop-outs at +-0.5 m: manuscript 1, recomputed 1.000
+PASS  lag_long drop-outs at +-1.0 m: manuscript 1, recomputed 1.000
+
+Table 10, lower block: forcing reruns of 14 stratified central runs
+PASS  central originals accepted at +-1.0 m: manuscript 14, recomputed 14.000
+PASS  central originals accepted at +-0.5 m: manuscript 0, recomputed 0.000
+PASS  central multiplicative runs with |dA| < 1 km2: manuscript 12, recomputed 12.000
+PASS  central multiplicative max |dA| (km2): manuscript 53, recomputed 53.080
+PASS  central multiplicative runs with |de| < 0.01 m: manuscript 8, recomputed 8.000
+PASS  central multiplicative max |de| (m): manuscript 0.51, recomputed 0.508
+PASS  central multiplicative drop-outs at +-0.5 m: manuscript 0, recomputed 0.000
+PASS  central multiplicative drop-outs at +-1.0 m: manuscript 1, recomputed 1.000
+PASS  central lag_short runs with |dA| < 1 km2: manuscript 13, recomputed 13.000
+PASS  central lag_short max |dA| (km2): manuscript 41, recomputed 40.920
+PASS  central lag_short runs with |de| < 0.01 m: manuscript 11, recomputed 11.000
+PASS  central lag_short max |de| (m): manuscript 0.51, recomputed 0.511
+PASS  central lag_short drop-outs at +-0.5 m: manuscript 0, recomputed 0.000
+PASS  central lag_short drop-outs at +-1.0 m: manuscript 1, recomputed 1.000
+PASS  central lag_long runs with |dA| < 1 km2: manuscript 13, recomputed 13.000
+PASS  central lag_long max |dA| (km2): manuscript 41, recomputed 40.920
+PASS  central lag_long runs with |de| < 0.01 m: manuscript 8, recomputed 8.000
+PASS  central lag_long max |de| (m): manuscript 0.51, recomputed 0.513
+PASS  central lag_long drop-outs at +-0.5 m: manuscript 0, recomputed 0.000
+PASS  central lag_long drop-outs at +-1.0 m: manuscript 2, recomputed 2.000
+
+Table 7: contingency table, every cell
+PASS  nominal all_land hits: manuscript 278, recomputed 278.000
+PASS  nominal all_land misses: manuscript 272, recomputed 272.000
+PASS  nominal all_land false_alarms: manuscript 4216, recomputed 4216.000
+PASS  nominal all_land correct_negatives: manuscript 17122, recomputed 17122.000
+PASS  nominal all_land hit_rate: manuscript 0.51, recomputed 0.505
+PASS  nominal all_land false_alarm_ratio: manuscript 0.94, recomputed 0.938
+PASS  nominal all_land csi: manuscript 0.058, recomputed 0.058
+PASS  nominal all_land bias: manuscript 8.2, recomputed 8.171
+PASS  nominal open_land hits: manuscript 85, recomputed 85.000
+PASS  nominal open_land misses: manuscript 10, recomputed 10.000
+PASS  nominal open_land false_alarms: manuscript 993, recomputed 993.000
+PASS  nominal open_land correct_negatives: manuscript 872, recomputed 872.000
+PASS  nominal open_land hit_rate: manuscript 0.89, recomputed 0.895
+PASS  nominal open_land false_alarm_ratio: manuscript 0.92, recomputed 0.921
+PASS  nominal open_land csi: manuscript 0.078, recomputed 0.078
+PASS  nominal open_land bias: manuscript 11.3, recomputed 11.347
+PASS  median_accepted all_land hits: manuscript 241, recomputed 241.000
+PASS  median_accepted all_land misses: manuscript 310, recomputed 310.000
+PASS  median_accepted all_land false_alarms: manuscript 2958, recomputed 2958.000
+PASS  median_accepted all_land correct_negatives: manuscript 18512, recomputed 18512.000
+PASS  median_accepted all_land hit_rate: manuscript 0.44, recomputed 0.437
+PASS  median_accepted all_land false_alarm_ratio: manuscript 0.92, recomputed 0.925
+PASS  median_accepted all_land csi: manuscript 0.069, recomputed 0.069
+PASS  median_accepted all_land bias: manuscript 5.8, recomputed 5.806
+PASS  median_accepted open_land hits: manuscript 74, recomputed 74.000
+PASS  median_accepted open_land misses: manuscript 21, recomputed 21.000
+PASS  median_accepted open_land false_alarms: manuscript 695, recomputed 695.000
+PASS  median_accepted open_land correct_negatives: manuscript 1175, recomputed 1175.000
+PASS  median_accepted open_land hit_rate: manuscript 0.78, recomputed 0.779
+PASS  median_accepted open_land false_alarm_ratio: manuscript 0.9, recomputed 0.904
+PASS  median_accepted open_land csi: manuscript 0.094, recomputed 0.094
+PASS  median_accepted open_land bias: manuscript 8.1, recomputed 8.095
+PASS  bare_earth all_land hits: manuscript 340, recomputed 340.000
+PASS  bare_earth all_land misses: manuscript 200, recomputed 200.000
+PASS  bare_earth all_land false_alarms: manuscript 5789, recomputed 5789.000
+PASS  bare_earth all_land correct_negatives: manuscript 21407, recomputed 21407.000
+PASS  bare_earth all_land hit_rate: manuscript 0.63, recomputed 0.630
+PASS  bare_earth all_land false_alarm_ratio: manuscript 0.94, recomputed 0.945
+PASS  bare_earth all_land csi: manuscript 0.054, recomputed 0.054
+PASS  bare_earth all_land bias: manuscript 11.3, recomputed 11.350
+PASS  73 accepted, all-land CSI min: manuscript 0.059, recomputed 0.059
+PASS  73 accepted, all-land CSI max: manuscript 0.076, recomputed 0.076
+PASS  73 accepted, open-land hit rate min: manuscript 0.76, recomputed 0.758
+PASS  73 accepted, open-land hit rate max: manuscript 0.88, recomputed 0.884
+PASS  73 accepted, open-land FAR min: manuscript 0.9, recomputed 0.899
+PASS  73 accepted, open-land FAR max: manuscript 0.92, recomputed 0.919
+PASS  73 accepted, open-land CSI min: manuscript 0.08, recomputed 0.080
+PASS  73 accepted, open-land CSI max: manuscript 0.098, recomputed 0.098
+
+Section 4.6: drainage diagnosis, nominal run
+PASS  flooded land at the pass (km2): manuscript 179.8, recomputed 179.760
+PASS  water stored on land (Mcm): manuscript 355, recomputed 355.364
+
+0 check(s) failed
