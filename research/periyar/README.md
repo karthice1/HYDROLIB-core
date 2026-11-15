@@ -3,6 +3,11 @@
 Scripts, inputs and results behind the manuscript *How far can one gauge mark and one radar image narrow
 parameter uncertainty in an open-data flood model?* (`manuscript/manuscript.tex`).
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24246263.svg)](https://doi.org/10.5281/zenodo.24246263)
+
+Archived release: tag `v1.0-periyar` (commit 35e021e), Zenodo DOI
+[10.5281/zenodo.24246263](https://doi.org/10.5281/zenodo.24246263). Cite this DOI for the code and results.
+
 ## Inputs
 
 | Input | Source | Use |

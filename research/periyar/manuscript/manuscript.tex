@@ -580,13 +580,13 @@ We built an open-data D-Flow FM model of the 2018 Periyar flood with HYDROLIB-co
 \item Language and size: Python, about 2,900 lines including tests
 \item Licence and cost: free, MIT licence. The research code is copyright Karthik V and Roopa D (file \texttt{research/LICENSE}); HYDROLIB-core, included unchanged, is copyright Deltares (file \texttt{LICENSE}); the file \texttt{NOTICE} sets out the split
 \item Source: \url{https://github.com/karthice1/HYDROLIB-core}, tag \texttt{v1.0-periyar}
-\item Archive: Zenodo, \textbf{[AUTHOR INPUT REQUIRED: Zenodo DOI]}
+\item Archive: Zenodo, \url{https://doi.org/10.5281/zenodo.24246263} \citep{karthik2026zenodo}
 \end{itemize}
 \par}
 
 \section*{Code and data availability}
 {\sloppy
-The release archived on Zenodo (tag \texttt{v1.0-periyar}; the full commit hash is in its file \texttt{COMMIT.txt}) contains everything listed below. File names are given relative to the folder \texttt{research/periyar}.
+The release archived on Zenodo (\url{https://doi.org/10.5281/zenodo.24246263}; tag \texttt{v1.0-periyar}; the full commit hash is in its file \texttt{COMMIT.txt}) contains everything listed below. File names are given relative to the folder \texttt{research/periyar}.
 \begin{itemize}
 \item Code: all scripts for the model build, sensitivity runs, radar flood map, comparison with observations, structural tests, analysis and figures. \texttt{README.md} gives the command behind every table and figure.
 \item Data: the digitised CWC flow records, the radar flood maps and the per-run results of every ensemble.
@@ -598,7 +598,7 @@ checks downloaded files against it.
 \begin{center}\texttt{python -m research.periyar.check\_results}\end{center}
 recomputes 120 published values (Tables~\ref{tab:morris}, \ref{tab:intervals}, \ref{tab:confusion}, \ref{tab:forcing} and \ref{tab:supp} and Section~\ref{sec:drainage}) from the stored results. It does not rerun D-Flow FM.
 \item Test report: the script \texttt{release\_checks.sh} installs the release in a new Python environment and runs the unit tests and both checks. Its report for the archived commit is in the folder \texttt{test\_report} of the archive.
-\item DOI: \textbf{[AUTHOR INPUT REQUIRED: Zenodo DOI of the archived release.]}
+\item DOI: \url{https://doi.org/10.5281/zenodo.24246263} \citep{karthik2026zenodo}.
 \end{itemize}
 \par}
 
@@ -700,6 +700,9 @@ Teng, J., Jakeman, A.J., Vaze, J., Croke, B.F.W., Dutta, D., Kim, S., 2017. Floo
 
 \bibitem[{Tolan et~al.(2024)}]{tolan2024}
 Tolan, J., Yang, E., Nosarzewski, B., Couairon, G., Vo, H.V., Brandt, J., Spore, J., Majumdar, S., Haziza, D., Vamaraju, J., Moutakanni, T., Bojanowski, P., Johns, T., White, B., Tiecke, T., Couprie, C., Saenz, E., 2024. Very high resolution canopy height maps from {RGB} imagery using self-supervised vision transformer and convolutional decoder trained on aerial lidar. Remote Sensing of Environment 300, 113888. \url{https://doi.org/10.1016/j.rse.2023.113888}.
+
+\bibitem[{V and D(2026)}]{karthik2026zenodo}
+V, K., D, R., 2026. Periyar 2018 flood: open-data D-Flow FM model, sensitivity and uncertainty workflow (research code and results), version v1.0-periyar. Zenodo. \url{https://doi.org/10.5281/zenodo.24246263}.
 
 \bibitem[{Wood et~al.(2016)Wood, Hostache, Neal, Wagener, Giustarini, Chini, Corato, Matgen and Bates}]{wood2016}
 Wood, M., Hostache, R., Neal, J., Wagener, T., Giustarini, L., Chini, M., Corato, G., Matgen, P., Bates, P., 2016. Calibration of channel depth and friction parameters in the LISFLOOD-FP hydraulic model using medium-resolution SAR data and identifiability techniques. Hydrology and Earth System Sciences 20, 4983--4997. \url{https://doi.org/10.5194/hess-20-4983-2016}.
