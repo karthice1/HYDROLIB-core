@@ -8,6 +8,35 @@ parameter uncertainty in an open-data flood model?* (`manuscript/manuscript.tex`
 Archived release: tag `v1.0-periyar` (commit 35e021e), Zenodo DOI
 [10.5281/zenodo.24246263](https://doi.org/10.5281/zenodo.24246263). Cite this DOI for the code and results.
 
+## Version 1.1-periyar: corrected radar geolocation
+
+**v1.0-periyar is the historical record.** Its radar flood map is misplaced by 840 m (the two descending
+Sentinel-1 scenes were geocoded with ground-control points at hill heights). Everything below this section,
+`check_results.py`, `REPRODUCE.md` and `results/` describe v1.0 and are kept unchanged.
+
+**v1.1-periyar is the corrected analysis.** It shifts each scene to its true position, rebuilds the flood
+map with the unchanged v1.0 rules and rescores every run against the corrected map. No threshold,
+acceptance rule, tolerance, factor range, seed or model was changed. The corrected-map results are the
+ones reported in the revised manuscript. v1.1 adds files and changes none of the v1.0 results.
+
+| File | Purpose |
+|---|---|
+| `RELEASE_NOTES_v11.md` | What changed between v1.0 and v1.1 and what did not, and the known limits |
+| `REPRODUCE_v11.md` | How to check and rebuild the v1.1 results; separates the portable commands from the environment-specific provenance scripts |
+| `check_results_v11.py` | Independent check of the corrected-map values (658 checks); `python -m research.periyar.check_results_v11` |
+| `release_checks_v11.sh` | Clean-environment test of the release (unit tests, both checkers, source data); writes `test_report_v11/` |
+| `results_v11/` | Corrected radar maps, per-cell model states of the rescored runs, rescoring outputs, evening-pass check, rerun reproduction |
+| `v11_scripts/` | Provenance scripts of the correction, reruns and rescoring, kept as run, with absolute paths (`v11_scripts/README_PROVENANCE.md`) |
+
+v1.1 archive: tag `v1.1-periyar`, Zenodo version DOI
+[10.5281/zenodo.24390466](https://doi.org/10.5281/zenodo.24390466). The two versions share one Zenodo concept DOI
+[10.5281/zenodo.24246262](https://doi.org/10.5281/zenodo.24246262), which always resolves to the latest version.
+Cite the v1.1 version DOI for the corrected analysis and the v1.0 DOI only for the record before the
+correction.
+
+`manuscript/` holds the v1.0 manuscript source (prepared for Environmental Modelling & Software), with
+the uncorrected-map numbers. It is kept as part of the v1.0 record and is not the revised manuscript.
+
 ## Inputs
 
 | Input | Source | Use |

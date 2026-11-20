@@ -1,7 +1,7 @@
 {
   "title": "Periyar 2018 flood: open-data D-Flow FM model, sensitivity and uncertainty workflow (research code and results)",
   "upload_type": "software",
-  "description": "Research code, per-run results and manuscript sources for the article \"How far can one gauge mark and one radar image narrow parameter uncertainty in an open-data flood model? Sensitivity analysis of the 2018 Periyar flood\". The archive is a snapshot of the GitHub fork karthice1/HYDROLIB-core at tag v1.0-periyar, plus the clean-environment test report of that exact commit. Licensing (see NOTICE): HYDROLIB-core 1.5.0, copyright Deltares, MIT (LICENSE), included unchanged; the research code in research/gsa and research/periyar, copyright Karthik V and Roopa D, MIT (research/LICENSE); the manuscript source in research/periyar/manuscript is not MIT-licensed. python -m research.periyar.check_results recomputes 120 published values from the stored results without running D-Flow FM. See README_FIRST.md and research/periyar/REPRODUCE.md.",
+  "description": "Research code, per-run results and manuscript sources for the article \"How far can one gauge mark and one radar image narrow parameter uncertainty in an open-data flood model? Sensitivity analysis of the 2018 Periyar flood\". Version v1.1-periyar corrects an 840 m geolocation error of the Sentinel-1 radar flood map used in v1.0, rebuilds the map with the unchanged v1.0 rules and rescores every run against the corrected map; no threshold, acceptance rule, tolerance, factor range, seed or model was changed. v1.0-periyar remains available as the record before the correction. The archive is a snapshot of the GitHub fork karthice1/HYDROLIB-core at tag v1.1-periyar, plus the clean-environment test report of that exact commit. Licensing (see NOTICE): HYDROLIB-core 1.5.0, copyright Deltares, MIT (LICENSE), included unchanged; the research code in research/gsa and research/periyar, copyright Karthik V and Roopa D, MIT (research/LICENSE); the manuscript source in research/periyar/manuscript (the v1.0 manuscript) is not MIT-licensed. python -m research.periyar.check_results_v11 checks 658 corrected-map values and python -m research.periyar.check_results the 120 v1.0 values, both from the stored results without running D-Flow FM. See README_FIRST.md, research/periyar/RELEASE_NOTES_v11.md and research/periyar/REPRODUCE_v11.md.",
   "creators": [
     {
       "name": "V, Karthik",
@@ -21,11 +21,12 @@
     "D-Flow FM",
     "HYDROLIB-core",
     "Sentinel-1",
-    "Kerala 2018 flood"
+    "Kerala 2018 flood",
+    "radar geolocation"
   ],
   "related_identifiers": [
     {
-      "identifier": "https://github.com/karthice1/HYDROLIB-core/tree/v1.0-periyar",
+      "identifier": "https://github.com/karthice1/HYDROLIB-core/tree/v1.1-periyar",
       "relation": "isSupplementTo",
       "resource_type": "software"
     },
@@ -33,7 +34,12 @@
       "identifier": "https://github.com/Deltares/HYDROLIB-core",
       "relation": "isDerivedFrom",
       "resource_type": "software"
+    },
+    {
+      "identifier": "10.5281/zenodo.24246263",
+      "relation": "isNewVersionOf",
+      "resource_type": "software"
     }
   ],
-  "version": "v1.0-periyar"
+  "version": "v1.1-periyar"
 }

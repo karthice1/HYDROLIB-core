@@ -1,0 +1,32 @@
+{
+ "base": {
+  "threshold_db": -13.75,
+  "min_drop_db": 3.0,
+  "cells_over_0_5": 589,
+  "km2_over_0_5": 23.56
+ },
+ "thr_m12.25": {
+  "threshold_db": -12.25,
+  "min_drop_db": 3.0,
+  "cells_over_0_5": 688,
+  "km2_over_0_5": 27.52
+ },
+ "thr_m15.25": {
+  "threshold_db": -15.25,
+  "min_drop_db": 3.0,
+  "cells_over_0_5": 459,
+  "km2_over_0_5": 18.36
+ },
+ "drop2": {
+  "threshold_db": -13.75,
+  "min_drop_db": 2.0,
+  "cells_over_0_5": 615,
+  "km2_over_0_5": 24.6
+ },
+ "drop4": {
+  "threshold_db": -13.75,
+  "min_drop_db": 4.0,
+  "cells_over_0_5": 545,
+  "km2_over_0_5": 21.8
+ }
+}

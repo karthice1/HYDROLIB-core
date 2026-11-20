@@ -1,0 +1,9 @@
+,,hit_rate,hit_rate,false_alarm_ratio,false_alarm_ratio,csi,csi
+,,min,max,min,max,min,max
+radar_map,domain,,,,,,
+evening_threshold_only,all_land,0.722,0.857,0.839,0.88,0.118,0.153
+evening_threshold_only,open_land,0.741,0.862,0.46,0.58,0.39,0.455
+morning_published_rule,all_land,0.754,0.873,0.838,0.881,0.116,0.154
+morning_published_rule,open_land,0.75,0.876,0.444,0.566,0.395,0.469
+morning_threshold_only,all_land,0.723,0.857,0.827,0.871,0.126,0.162
+morning_threshold_only,open_land,0.742,0.865,0.422,0.55,0.406,0.481

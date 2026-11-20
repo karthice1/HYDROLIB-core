@@ -1,0 +1,7 @@
+group,variant,runs,repro_max_diff,repro_not_exact,accepted_0.5_published,accepted_0.5_corrected,area_0.5_corrected,accepted_1.0_published,accepted_1.0_corrected,area_1.0_corrected,accepted_1.5_published,accepted_1.5_corrected,area_1.5_corrected,dropouts_1_0,fail_hfl,fail_radar
+strict (old 23 accepted at +-0.5 m),multiplicative,23,8.326672684688674e-17,0,21,16,152.2-198.3,22,17,152.2-218.8,23,18,145.3-218.8,6,1,5
+strict (old 23 accepted at +-0.5 m),lag_short,23,8.326672684688674e-17,0,21,15,145.8-198.1,23,17,145.8-219.0,23,17,145.8-219.0,6,0,6
+strict (old 23 accepted at +-0.5 m),lag_long,23,2.220446049250313e-16,0,22,16,145.9-198.2,22,16,145.9-198.2,23,17,145.9-221.2,7,1,6
+central (14 of old 50 accepted at +-1.0 m only),multiplicative,14,1.1102230246251565e-16,0,0,0,,13,13,152.6-235.5,14,14,152.6-235.5,1,1,0
+central (14 of old 50 accepted at +-1.0 m only),lag_short,14,1.1102230246251565e-16,0,0,0,,13,13,152.5-243.2,14,14,152.5-243.2,1,1,0
+central (14 of old 50 accepted at +-1.0 m only),lag_long,14,1.1102230246251565e-16,0,0,0,,12,12,152.5-243.6,14,14,152.5-243.6,2,2,0

@@ -1,0 +1,40 @@
+{
+ "lhs8": {
+  "rerun": 47,
+  "needed": 47,
+  "max_repro_diff": 5.12823337661672e-05,
+  "n_not_exact": 1
+ },
+ "lhs8b": {
+  "rerun": 45,
+  "needed": 45,
+  "max_repro_diff": 0.20000000000000284,
+  "n_not_exact": 2
+ },
+ "fixed": {
+  "rerun": 82,
+  "needed": 82,
+  "max_repro_diff": 1.1102230246251565e-16,
+  "n_not_exact": 0,
+  "tol0.5": {
+   "published_accepted": 30,
+   "corrected_accepted": 30,
+   "hfl_pass": 52,
+   "corrected_fail_radar": 22,
+   "corrected_range": [
+    146.2,
+    212.12
+   ]
+  },
+  "tol1.0": {
+   "published_accepted": 57,
+   "corrected_accepted": 57,
+   "hfl_pass": 82,
+   "corrected_fail_radar": 25,
+   "corrected_range": [
+    146.2,
+    213.84
+   ]
+  }
+ }
+}

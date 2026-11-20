@@ -1,0 +1,107 @@
+{
+ "fixed": {
+  "runs": 82,
+  "file": "states_fixed.npz",
+  "sha256": "46b0a2a33d85a15b8471e48d9a356b069cc9c97e4a36f492021f53d5357a2615"
+ },
+ "laglong_central": {
+  "runs": 14,
+  "file": "states_laglong_central.npz",
+  "sha256": "321a248203b70d2cbd79a594ca4deef369ab5476a8a74d79e160020e57fc6855"
+ },
+ "laglong_strict": {
+  "runs": 23,
+  "file": "states_laglong_strict.npz",
+  "sha256": "40cad88d309e466f2b7fe88b99045cbcc797a5d23adc6106a6c8e504bf1800a3"
+ },
+ "lagshort_central": {
+  "runs": 14,
+  "file": "states_lagshort_central.npz",
+  "sha256": "338cd0433a201ba605a6adfe47a291cd6b0a2ec6acbcf9425d2f3d7a26c325ce"
+ },
+ "lagshort_strict": {
+  "runs": 23,
+  "file": "states_lagshort_strict.npz",
+  "sha256": "c3d73fb4c2e570eb250f14b1a90e2d73460650dc2b7d5a9a1e18545dff6348e1"
+ },
+ "lhs200": {
+  "runs": 200,
+  "file": "states_lhs200.npz",
+  "sha256": "cd500e38dfd20d5c1c86bfca2c0b31f3423b2db777d62d0bbbe2d4dd8f8c9f5f"
+ },
+ "lhs400": {
+  "runs": 400,
+  "file": "states_lhs400.npz",
+  "sha256": "8595b6cfbdb17771e629a56c37958c4f74129c328a03d4f854d841773757a64f"
+ },
+ "lhs8": {
+  "runs": 47,
+  "file": "states_lhs8.npz",
+  "sha256": "5f79987491005cdb0569661f36e02b97719b9d6cca16b1154969edbae982f730"
+ },
+ "lhs8b": {
+  "runs": 45,
+  "file": "states_lhs8b.npz",
+  "sha256": "50ef15838a99e2a576a66857bd4851a8e6b6349c1c2c493790c4b9d8c5c77269"
+ },
+ "mult_central": {
+  "runs": 14,
+  "file": "states_mult_central.npz",
+  "sha256": "c9a2d0d08e6b6a354bd121962f8ff974125b9c3796a5cbf79d72a892bbb3184d"
+ },
+ "mult_strict": {
+  "runs": 23,
+  "file": "states_mult_strict.npz",
+  "sha256": "b226011c22f7aa9596e8a44f08ceebb25e3ebf776c26273054d8fcdd4c34cc04"
+ },
+ "repeat_add": {
+  "runs": 3,
+  "file": "states_repeat_add.npz",
+  "sha256": "7590a0ae6f2b417c077f3dbbd4b327db66c3eacd77ce250a18c898deb2d5003c"
+ },
+ "repeat_mult": {
+  "runs": 3,
+  "file": "states_repeat_mult.npz",
+  "sha256": "7ab5934f9ca2375169a18b7af65738a0b0cea98ec6fcd8c090d9e977d9a9f7d6"
+ },
+ "structural_full_canopy": {
+  "runs": 1,
+  "file": "state_structural_full_canopy.npz",
+  "sha256": "b8696a4d05b8005a3b13ff0681c526cb6154f9e2399dfbefb40a25854b3238fe"
+ },
+ "structural_grid_100m": {
+  "runs": 1,
+  "file": "state_structural_grid_100m.npz",
+  "sha256": "8d45a0639bf948eee68d96619d077754aa6982f1e17cd8983f7c9bcb90b7c90f"
+ },
+ "structural_grid_400m": {
+  "runs": 1,
+  "file": "state_structural_grid_400m.npz",
+  "sha256": "43928848980114d7fe69cca2d46a69421ae678b6be2c4ac650df755a9b274fc9"
+ },
+ "structural_min_terrain": {
+  "runs": 1,
+  "file": "state_structural_min_terrain.npz",
+  "sha256": "41df7a0f56d343e697567b7a35fca6fc0c46fb216bacb96475c1540d7dbfde9a"
+ },
+ "structural_nominal": {
+  "runs": 1,
+  "file": "state_structural_nominal.npz",
+  "sha256": "b664f1717e02910b68647391893e675a89c90d22eec0db214be71c9d6730c0cc"
+ },
+ "structural_tide_shift_6h": {
+  "runs": 1,
+  "file": "state_structural_tide_shift_6h.npz",
+  "sha256": "6685cf7104c64fdf2901c0b0b18674131ed6470d0d75142c8dea4a587dc0c1c1"
+ },
+ "structural_tide_x1.5": {
+  "runs": 1,
+  "file": "state_structural_tide_x1.5.npz",
+  "sha256": "a35ee1f8e681845c71254049cffb3492f25fd0768436cff8e1ceca54db8fa428"
+ },
+ "structural_wide_channel": {
+  "runs": 1,
+  "file": "state_structural_wide_channel.npz",
+  "sha256": "c12d24ecf613b99728225d1d298c6eb8a4265b478e8e9c9e81719dcdbe087377"
+ }
+}
