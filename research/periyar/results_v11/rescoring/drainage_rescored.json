@@ -1,0 +1,140 @@
+{
+ "drainage_nominal": {
+  "published_radar_cells_on_land": 550,
+  "corrected_radar_cells_on_land": 571,
+  "closed depression": {
+   "flooded_km2": 128.1,
+   "false_alarm_km2_published": 120.5,
+   "false_alarm_km2_corrected": 115.9,
+   "tree_share_of_corrected_fa": 0.834
+  },
+  "draining": {
+   "flooded_km2": 38.0,
+   "false_alarm_km2_published": 34.9,
+   "false_alarm_km2_corrected": 30.9,
+   "tree_share_of_corrected_fa": 0.642
+  },
+  "connected, slow": {
+   "flooded_km2": 13.6,
+   "false_alarm_km2_published": 13.2,
+   "false_alarm_km2_corrected": 12.6,
+   "tree_share_of_corrected_fa": 0.692
+  },
+  "false_alarm_km2_published": 168.6,
+  "false_alarm_km2_corrected": 159.4,
+  "all_corrected": {
+   "hits": 508,
+   "misses": 63,
+   "false_alarms": 3986,
+   "correct_negatives": 17182,
+   "hit_rate": 0.89,
+   "false_alarm_ratio": 0.887,
+   "csi": 0.111,
+   "bias": 7.87,
+   "ets": 0.088
+  },
+  "open_corrected": {
+   "hits": 455,
+   "misses": 55,
+   "false_alarms": 623,
+   "correct_negatives": 827,
+   "hit_rate": 0.892,
+   "false_alarm_ratio": 0.578,
+   "csi": 0.402,
+   "bias": 2.114,
+   "ets": 0.205
+  }
+ },
+ "drainage_filled": {
+  "published_radar_cells_on_land": 551,
+  "corrected_radar_cells_on_land": 574,
+  "closed depression": {
+   "flooded_km2": 48.2,
+   "false_alarm_km2_published": 45.8,
+   "false_alarm_km2_corrected": 48.0,
+   "tree_share_of_corrected_fa": 0.906
+  },
+  "draining": {
+   "flooded_km2": 47.2,
+   "false_alarm_km2_published": 42.0,
+   "false_alarm_km2_corrected": 35.5,
+   "tree_share_of_corrected_fa": 0.797
+  },
+  "connected, slow": {
+   "flooded_km2": 57.6,
+   "false_alarm_km2_published": 55.2,
+   "false_alarm_km2_corrected": 51.4,
+   "tree_share_of_corrected_fa": 0.667
+  },
+  "false_alarm_km2_published": 143.0,
+  "false_alarm_km2_corrected": 134.9,
+  "all_corrected": {
+   "hits": 453,
+   "misses": 121,
+   "false_alarms": 3373,
+   "correct_negatives": 17821,
+   "hit_rate": 0.789,
+   "false_alarm_ratio": 0.882,
+   "csi": 0.115,
+   "bias": 6.666,
+   "ets": 0.092
+  },
+  "open_corrected": {
+   "hits": 407,
+   "misses": 106,
+   "false_alarms": 510,
+   "correct_negatives": 947,
+   "hit_rate": 0.793,
+   "false_alarm_ratio": 0.556,
+   "csi": 0.398,
+   "bias": 1.788,
+   "ets": 0.214
+  }
+ },
+ "drainage_accepted": {
+  "published_radar_cells_on_land": 551,
+  "corrected_radar_cells_on_land": 571,
+  "closed depression": {
+   "flooded_km2": 97.6,
+   "false_alarm_km2_published": 90.7,
+   "false_alarm_km2_corrected": 86.4,
+   "tree_share_of_corrected_fa": 0.825
+  },
+  "draining": {
+   "flooded_km2": 25.6,
+   "false_alarm_km2_published": 23.3,
+   "false_alarm_km2_corrected": 19.4,
+   "tree_share_of_corrected_fa": 0.769
+  },
+  "connected, slow": {
+   "flooded_km2": 4.7,
+   "false_alarm_km2_published": 4.4,
+   "false_alarm_km2_corrected": 4.4,
+   "tree_share_of_corrected_fa": 0.856
+  },
+  "false_alarm_km2_published": 118.3,
+  "false_alarm_km2_corrected": 110.3,
+  "all_corrected": {
+   "hits": 442,
+   "misses": 129,
+   "false_alarms": 2757,
+   "correct_negatives": 18544,
+   "hit_rate": 0.774,
+   "false_alarm_ratio": 0.862,
+   "csi": 0.133,
+   "bias": 5.602,
+   "ets": 0.11
+  },
+  "open_corrected": {
+   "hits": 394,
+   "misses": 116,
+   "false_alarms": 375,
+   "correct_negatives": 1080,
+   "hit_rate": 0.773,
+   "false_alarm_ratio": 0.488,
+   "csi": 0.445,
+   "bias": 1.508,
+   "ets": 0.284
+  }
+ }
+}

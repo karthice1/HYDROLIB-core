@@ -1,0 +1,147 @@
+{
+ "n_runs": 600,
+ "n_needed_for_joint_rule": 306,
+ "n_needed_missing": 0,
+ "sar_flooded_land_km2": {
+  "published_constant": 22.0,
+  "corrected_map": 22.96,
+  "min_model_flooded_km2": 77.36,
+  "note": "area test is non-binding for every run with either value"
+ },
+ "reruns_reproduce_stored_results_max_abs_diff": 0.2047575770803025,
+ "bootstrap_C_tol1.0_q05_q50_q95": [
+  0.5977580739956767,
+  0.6114502384210592,
+  0.6405304894327187
+ ],
+ "accepted_tol0.5": {
+  "n": 20,
+  "all_csi": [
+   0.12548369264787176,
+   0.1524045261669024
+  ],
+  "open_far": [
+   0.45786516853932585,
+   0.5407239819004525
+  ],
+  "open_hit": [
+   0.7524557956777996,
+   0.8070175438596491
+  ]
+ },
+ "accepted_tol1.0": {
+  "n": 69,
+  "all_csi": [
+   0.11631458386357851,
+   0.1544143510376363
+  ],
+  "open_far": [
+   0.444121915820029,
+   0.5662768031189084
+  ],
+  "open_hit": [
+   0.75049115913556,
+   0.8762278978388998
+  ]
+ },
+ "median_accepted_run_tol0.5": {
+  "design": "lhs400",
+  "run": 70,
+  "max_flooded_area_km2": 159.64,
+  "all_critical_success_index": 0.13551843681058934,
+  "open_false_alarm_ratio": 0.49069148936170215
+ },
+ "over_hfl_pass_runs_within_2m": {
+  "n": 306,
+  "max_all_csi": 0.16727568006496144,
+  "open_far": [
+   0.36065573770491804,
+   0.5936151855047455
+  ]
+ },
+ "not_recomputed": [],
+ "all_600": {
+  "all_critical_success_index": {
+   "published": [
+    0.050767414403778,
+    0.0808878856282919
+   ],
+   "corrected": [
+    0.0891689264635508,
+    0.16727568006496144
+   ]
+  },
+  "open_false_alarm_ratio": {
+   "published": [
+    0.8879492600422833,
+    0.9249374478732276
+   ],
+   "corrected": [
+    0.34328358208955223,
+    0.5977212971078002
+   ]
+  },
+  "open_hit_rate": {
+   "published": [
+    0.5157894736842106,
+    0.9894736842105264
+   ],
+   "corrected": [
+    0.6011787819253438,
+    0.978515625
+   ]
+  },
+  "open_critical_success_index": {
+   "published": [
+    0.074750830564784,
+    0.1029126213592233
+   ],
+   "corrected": [
+    0.38077285579641845,
+    0.4734848484848485
+   ]
+  }
+ },
+ "all_600_spearman_with_peak_area": {
+  "open_hit_rate": 0.9858974156344696,
+  "open_false_alarm_ratio": 0.9761553864478485,
+  "all_critical_success_index": -0.9791187802283777
+ },
+ "repro_not_exact_runs": [
+  [
+   "lhs400",
+   67,
+   0.012324163766077534
+  ],
+  [
+   "lhs400",
+   75,
+   0.000382498213209459
+  ],
+  [
+   "lhs400",
+   219,
+   0.040000000000020464
+  ],
+  [
+   "lhs400",
+   224,
+   0.026748502592989
+  ],
+  [
+   "lhs400",
+   279,
+   0.0018298561232441557
+  ],
+  [
+   "lhs400",
+   308,
+   0.2047575770803025
+  ],
+  [
+   "lhs400",
+   312,
+   0.004232208131061066
+  ]
+ ]
+}

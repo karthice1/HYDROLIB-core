@@ -1,0 +1,32 @@
+{
+ "otsu_db": {
+  "morning": -13.75,
+  "evening": -13.31
+ },
+ "morning_rule_equals_corrected_map": true,
+ "shifts_px": {
+  "20180821": [
+   -9,
+   -41
+  ],
+  "20180728": [
+   -9,
+   -41
+  ],
+  "20180821_asc": [
+   -3,
+   7
+  ]
+ },
+ "cells_over_0_5": {
+  "morning_published_rule": 589,
+  "morning_threshold_only": 799,
+  "evening_threshold_only": 757,
+  "morning_threshold_only_-1.5dB": 630,
+  "evening_threshold_only_-1.5dB": 561,
+  "morning_threshold_only_+1.5dB": 1035,
+  "evening_threshold_only_+1.5dB": 1059,
+  "evening_threshold_only_at_morning_threshold": 698
+ },
+ "accepted_runs_scored": 69
+}

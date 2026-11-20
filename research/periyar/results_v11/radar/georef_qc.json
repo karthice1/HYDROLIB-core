@@ -1,0 +1,218 @@
+{
+ "20180821": {
+  "annotation": {
+   "pass_": "Descending",
+   "heading": -167.9806954581957,
+   "gcp_height_m": [
+    557.8606552788988,
+    754.3642084524035
+   ],
+   "incidence_deg": 42.67488903952937
+  },
+  "shift_px": [
+   -9,
+   -41
+  ],
+  "image_displacement_m": {
+   "north": 180.0,
+   "east": -820.0,
+   "magnitude": 839.5236744726143
+  },
+  "displacement_bearing_deg": 282.4,
+  "look_direction_deg": 282.0,
+  "implied_height_error_m": 774.0,
+  "jrc_r_best": 0.878,
+  "quadrant_shifts_px": {
+   "NW": [
+    -9,
+    -41
+   ],
+   "NE": [
+    -9,
+    -42
+   ],
+   "SW": [
+    -9,
+    -40
+   ],
+   "SE": [
+    -9,
+    -41
+   ]
+  },
+  "verification": {
+   "raw": {
+    "jrc_r_at_zero": 0.688,
+    "builtup_r_at_zero": 0.128,
+    "builtup_best_shift_m": [
+     -160.0,
+     -840.0
+    ],
+    "channel_ring_contrast_db": 12.61
+   },
+   "corrected": {
+    "jrc_r_at_zero": 0.878,
+    "builtup_r_at_zero": 0.239,
+    "builtup_best_shift_m": [
+     20.0,
+     -20.0
+    ],
+    "channel_ring_contrast_db": 13.54
+   }
+  }
+ },
+ "20180728": {
+  "annotation": {
+   "pass_": "Descending",
+   "heading": -167.9818292552328,
+   "gcp_height_m": [
+    557.7294553220272,
+    755.1922891540453
+   ],
+   "incidence_deg": 42.67423180863354
+  },
+  "shift_px": [
+   -9,
+   -41
+  ],
+  "image_displacement_m": {
+   "north": 180.0,
+   "east": -820.0,
+   "magnitude": 839.5236744726143
+  },
+  "displacement_bearing_deg": 282.4,
+  "look_direction_deg": 282.0,
+  "implied_height_error_m": 774.0,
+  "jrc_r_best": 0.926,
+  "quadrant_shifts_px": {
+   "NW": [
+    -9,
+    -41
+   ],
+   "NE": [
+    -9,
+    -43
+   ],
+   "SW": [
+    -9,
+    -40
+   ],
+   "SE": [
+    -9,
+    -41
+   ]
+  },
+  "verification": {
+   "raw": {
+    "jrc_r_at_zero": 0.745,
+    "builtup_r_at_zero": 0.118,
+    "builtup_best_shift_m": [
+     -160.0,
+     -840.0
+    ],
+    "channel_ring_contrast_db": 13.28
+   },
+   "corrected": {
+    "jrc_r_at_zero": 0.926,
+    "builtup_r_at_zero": 0.201,
+    "builtup_best_shift_m": [
+     20.0,
+     -20.0
+    ],
+    "channel_ring_contrast_db": 14.22
+   }
+  }
+ },
+ "20180821_asc": {
+  "annotation": {
+   "pass_": "Ascending",
+   "heading": -12.01755733046726,
+   "gcp_height_m": [
+    3.849450717680156,
+    13.63613941334188
+   ],
+   "incidence_deg": 37.063874568951896
+  },
+  "shift_px": [
+   -3,
+   7
+  ],
+  "image_displacement_m": {
+   "north": 60.0,
+   "east": 140.0,
+   "magnitude": 152.31546211727817
+  },
+  "displacement_bearing_deg": 66.8,
+  "look_direction_deg": 78.0,
+  "implied_height_error_m": 115.0,
+  "jrc_r_best": 0.869,
+  "quadrant_shifts_px": {
+   "NW": [
+    -3,
+    7
+   ],
+   "NE": [
+    -2,
+    6
+   ],
+   "SW": [
+    -3,
+    7
+   ],
+   "SE": [
+    -2,
+    6
+   ]
+  },
+  "verification": {
+   "raw": {
+    "jrc_r_at_zero": 0.803,
+    "builtup_r_at_zero": 0.237,
+    "builtup_best_shift_m": [
+     -40.0,
+     120.0
+    ],
+    "channel_ring_contrast_db": 11.76
+   },
+   "corrected": {
+    "jrc_r_at_zero": 0.869,
+    "builtup_r_at_zero": 0.275,
+    "builtup_best_shift_m": [
+     20.0,
+     -20.0
+    ],
+    "channel_ring_contrast_db": 11.72
+   }
+  }
+ },
+ "otsu_threshold_db": {
+  "morning_corrected": -13.75,
+  "evening_corrected": -13.31
+ },
+ "maps": {
+  "sar_flood_20180821_corrected": {
+   "valid_cells": 38514,
+   "cells_over_0_5": 589,
+   "sha256": "cda3ee7a00dbe42a5b30ba9a74c3ce121e75bb113f0503580e16cb4542691d8b",
+   "sha256_as_written_by_script": "faf9e9ad28ca7e277fe27fa6d52e20d3c3d51b711a450276cbf6cefc3872af95",
+   "sha256_note": "sha256 is the hash of the file distributed in this archive, which every v1.1 score was computed with. sha256_as_written_by_script is the hash recorded when sar_georef_correction.py wrote the map; a rerun of the script on 20 Nov 2026 gives the same value. The two files have identical pixels, size, transform, CRS, nodata, data type, DEFLATE compression and strip layout; only the compressed byte stream differs. The step that re-encoded the distributed file was not identified. The pixels were not altered."
+  },
+  "sar_evening_threshold_only_corrected": {
+   "valid_cells": 38704,
+   "cells_over_0_5": 757,
+   "sha256": "d0eb29a48d072f419bca6d2fe46e1c039e269a502b0b0509562fa64ca3b4c050",
+   "sha256_as_written_by_script": "7ac731a09cdaae23386f14655ffc85bc05cd4073af1ba303b68c5a37585dfc09",
+   "sha256_note": "sha256 is the hash of the file distributed in this archive, which every v1.1 score was computed with. sha256_as_written_by_script is the hash recorded when sar_georef_correction.py wrote the map; a rerun of the script on 20 Nov 2026 gives the same value. The two files have identical pixels, size, transform, CRS, nodata, data type, DEFLATE compression and strip layout; only the compressed byte stream differs. The step that re-encoded the distributed file was not identified. The pixels were not altered."
+  },
+  "sar_morning_threshold_only_corrected": {
+   "valid_cells": 38514,
+   "cells_over_0_5": 799,
+   "sha256": "a7b488113f33d6b41030c81adee510634512f8b944e07737cfc55cac6e6741fb",
+   "sha256_as_written_by_script": "a8d64984d6dd99eb3ec1e64001381c3f36ae198358176b1fb6721e01038e3012",
+   "sha256_note": "sha256 is the hash of the file distributed in this archive, which every v1.1 score was computed with. sha256_as_written_by_script is the hash recorded when sar_georef_correction.py wrote the map; a rerun of the script on 20 Nov 2026 gives the same value. The two files have identical pixels, size, transform, CRS, nodata, data type, DEFLATE compression and strip layout; only the compressed byte stream differs. The step that re-encoded the distributed file was not identified. The pixels were not altered."
+  }
+ },
+ "script_sha256": "8b07b5dea5219d877affccf0b5669d39c00dde6b9eb6a45b4485cee59d7801dc",
+ "note": "Displacement labels and bearings recomputed with v1.1 of the script (sign fix in reporting only; shifts and maps unchanged).",
+ "script_sha256_note": "script_sha256 is the version of sar_georef_correction.py that estimated the shifts and wrote the maps (local commit 3d1ce67). The copy in v11_scripts/ is the later version (SHA-256 1cace0fc...), which changes only the sign of the reported displacement; the shifts and maps are unchanged."
+}
